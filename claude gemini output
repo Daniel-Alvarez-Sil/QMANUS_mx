@@ -327,4 +327,17 @@ time python3 provision.py tenant_zeta
 
 Tiene que salir en < 60 segundos. Eso solo ya cubre módulos 1, 3 y RBAC.
 
+
+
 **Ahora mismo:** guarda este archivo. En el evento solo necesitas el `.env` con los datos de TiDB y corres esto primero que nada. Todo lo demás puede fallar — si esto funciona, tienes 60 puntos garantizados. 💜
+
+Host: gateway01.xxx.tidbcloud.com
+Port: 4000
+User: xxxxxxxxxx.root
+Password: (te lo dan)
+Cluster Prefix: xxxxxxxxxx  ← esto es TIDB_CLUSTER_PREFIX
+
+
+
+
+
