@@ -136,6 +136,47 @@ async def call_tool(session_id: str, body: ToolCallRequest) -> JSONResponse:
     })
 
 
+# ── GET /api/v1/agents ───────────────────────────────────────────────────────
+
+@router.get("/")
+async def get_all_agents() -> JSONResponse:
+    """
+    Return all agent sessions for the current tenant.
+    Results are ordered by creation date (newest first).
+    """
+    tenant_id = ctx_tenant.get()
+
+    conn = await get_conn(tenant_id)
+    try:
+        async with conn.cursor(aiomysql.DictCursor) as cur:
+            await cur.execute(
+                """
+                SELECT session_id, agent_type, status, created_at, updated_at
+                FROM   agent_sessions
+                WHERE  tenant_id = %s
+                ORDER  BY created_at DESC
+                """,
+                (tenant_id,),
+            )
+            agent_rows = await cur.fetchall()
+    finally:
+        await release_conn(tenant_id, conn)
+
+    agents: list[dict[str, Any]] = []
+    for row in agent_rows:
+        agent = dict(row)
+        if isinstance(agent.get("created_at"), datetime):
+            agent["created_at"] = agent["created_at"].isoformat()
+        if isinstance(agent.get("updated_at"), datetime):
+            agent["updated_at"] = agent["updated_at"].isoformat()
+        agents.append(agent)
+
+    return JSONResponse(content={
+        "agents": agents,
+        "count": len(agents),
+    })
+
+
 # ── GET /api/v1/agents/{session_id}/state ────────────────────────────────────
 
 @router.get("/{session_id}/state")
