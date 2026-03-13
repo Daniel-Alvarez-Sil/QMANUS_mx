@@ -24,17 +24,20 @@ log = logging.getLogger("agentnexus.lifespan")
 async def lifespan(_: FastAPI):
     # ── Startup ───────────────────────────────────────────────────────────────
     try:
-        probe = await aiomysql.create_pool(
+        # Use synchronous mysql connector in thread pool to avoid Windows SSL issues
+        import mysql.connector
+        import asyncio
+        
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, lambda: mysql.connector.connect(
             host=TIDB_HOST, port=TIDB_PORT,
             user=TIDB_USER, password=TIDB_PASS,
-            db=TIDB_DB, maxsize=1, autocommit=True,
-            ssl=ssl_ctx,
-        )
-        async with probe.acquire() as conn:
-            async with conn.cursor() as cur:
-                await cur.execute("SELECT 1")
-        probe.close()
-        await probe.wait_closed()
+            database=TIDB_DB,
+            ssl_disabled=False,
+            ssl_ca=None,
+            connection_timeout=5,
+        ).close())
+        
         log.info("TiDB connected")
     except Exception as exc:
         log.warning("TiDB startup probe failed: %s", exc)

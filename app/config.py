@@ -10,8 +10,8 @@ import os
 # ── TiDB ──────────────────────────────────────────────────────────────────────
 TIDB_HOST: str = os.getenv("TIDB_HOST", "localhost")
 TIDB_PORT: int = int(os.getenv("TIDB_PORT", "4000"))
-TIDB_USER: str = os.getenv("TIDB_USER", "root")
-TIDB_PASS: str = os.getenv("TIDB_PASS", os.getenv("TIDB_PASSWORD", ""))
+TIDB_USER: str = os.getenv("TIDB_USER") or os.getenv("TIDB_ADMIN_USER", "root")
+TIDB_PASS: str = os.getenv("TIDB_PASS") or os.getenv("TIDB_PASSWORD") or os.getenv("TIDB_ADMIN_PASSWORD", "")
 TIDB_DB:   str = os.getenv("TIDB_DB",   os.getenv("TIDB_DATABASE", "agentnexus"))
 
 # ── Auth ───────────────────────────────────────────────────────────────────────
