@@ -568,6 +568,209 @@
     100% { border-color: rgba(255,255,255,0.25); }
   }
   .input-box.pulse { animation: input-pulse 0.45s ease forwards; }
+
+  /* ══ DASHBOARD ══ */
+  .dashboard {
+    display: none;
+    padding: 24px 28px;
+    overflow-y: auto;
+    flex: 1;
+  }
+  .dashboard.active { display: block; }
+  .hero.hidden { display: none; }
+
+  .dashboard-header {
+    margin-bottom: 32px;
+  }
+  .dashboard-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+  }
+  .dashboard-subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 24px;
+    margin-bottom: 32px;
+  }
+
+  .dashboard-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .dashboard-card-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+  }
+
+  /* Agent Performance Chart */
+  .agent-performance-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .agent-performance-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .agent-type-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    background: var(--bg-elevated);
+    padding: 4px 8px;
+    border-radius: 6px;
+    min-width: 70px;
+    text-align: center;
+  }
+  .agent-performance-bar {
+    flex: 1;
+    height: 8px;
+    background: var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .agent-performance-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-purple), var(--accent-blue));
+    border-radius: 4px;
+    transition: width 0.8s ease;
+  }
+  .agent-performance-stats {
+    font-size: 11px;
+    color: var(--text-muted);
+    min-width: 80px;
+    text-align: right;
+  }
+
+  /* Tool Usage Ranking */
+  .tool-ranking-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .tool-ranking-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: var(--bg-elevated);
+    border-radius: 8px;
+  }
+  .tool-rank {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+    min-width: 20px;
+  }
+  .tool-name {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-primary);
+    flex: 1;
+  }
+  .tool-count {
+    font-size: 11px;
+    color: var(--text-secondary);
+    background: var(--bg-hover);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  .tool-success-rate {
+    font-size: 10px;
+    color: var(--accent-green);
+    min-width: 35px;
+    text-align: right;
+  }
+
+  /* Daily Sessions Trend */
+  .trend-chart {
+    height: 200px;
+    position: relative;
+    background: var(--bg-elevated);
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 12px;
+  }
+  .trend-bars {
+    display: flex;
+    align-items: end;
+    height: 140px;
+    gap: 8px;
+  }
+  .trend-bar {
+    flex: 1;
+    background: linear-gradient(180deg, var(--accent-blue), var(--accent-purple));
+    border-radius: 4px 4px 0 0;
+    min-height: 4px;
+    position: relative;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+  }
+  .trend-bar:hover { opacity: 0.8; }
+  .trend-bar-tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 8px;
+    font-size: 10px;
+    color: var(--text-primary);
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    margin-bottom: 4px;
+  }
+  .trend-bar:hover .trend-bar-tooltip { opacity: 1; }
+  .trend-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+
+  /* Summary Stats */
+  .summary-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .summary-stat {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+  }
+  .summary-stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+  }
+  .summary-stat-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+  .summary-stat.change-positive { color: var(--accent-green); }
+  .summary-stat.change-negative { color: var(--accent-red); }
 </style>
 </head>
 <body>
@@ -601,6 +804,16 @@
         <span class="nav-icon">◎</span>
         <span>Agents</span>
         <span class="nav-badge">New</span>
+      </div>
+      <div class="nav-item" id="nav-dashboard">
+        <span class="nav-icon">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+            <rect x="2" y="3" width="3" height="10" rx="0.5"/>
+            <rect x="6.5" y="6" width="3" height="7" rx="0.5"/>
+            <rect x="11" y="2" width="3" height="11" rx="0.5"/>
+          </svg>
+        </span>
+        <span>Dashboard</span>
       </div>
       <div class="nav-item">
         <span class="nav-icon">
@@ -851,6 +1064,13 @@
           </svg>
           Design
         </button>
+        <button class="pill" id="view-all-agents">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="7" cy="7" r="5.5"/>
+            <path d="M7 3v4l2 2"/>
+          </svg>
+          View All Agents
+        </button>
         <button class="pill" id="pill-more">
           <span style="letter-spacing:2px; font-size:11px;">···</span>
           More
@@ -877,6 +1097,72 @@
         </div>
       </div>
 
+    </div>
+  </div>
+
+  <!-- ══ DASHBOARD ══ -->
+  <div class="dashboard" id="dashboard">
+    <div class="dashboard-header">
+      <h1 class="dashboard-title">Analytics Dashboard</h1>
+      <p class="dashboard-subtitle">Monitor your agent performance, tool usage, and session trends</p>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="summary-stats" id="summary-stats">
+      <div class="summary-stat">
+        <div class="summary-stat-value" id="total-sessions">-</div>
+        <div class="summary-stat-label">Total Sessions</div>
+      </div>
+      <div class="summary-stat">
+        <div class="summary-stat-value" id="completion-rate">-</div>
+        <div class="summary-stat-label">Completion Rate</div>
+      </div>
+      <div class="summary-stat">
+        <div class="summary-stat-value" id="total-tool-calls">-</div>
+        <div class="summary-stat-label">Tool Calls</div>
+      </div>
+      <div class="summary-stat">
+        <div class="summary-stat-value" id="avg-duration">-</div>
+        <div class="summary-stat-label">Avg Duration</div>
+      </div>
+    </div>
+
+    <!-- Dashboard Grid -->
+    <div class="dashboard-grid">
+      <!-- Agent Performance by Type -->
+      <div class="dashboard-card">
+        <h3 class="dashboard-card-title">Agent Performance by Type</h3>
+        <div class="agent-performance-list" id="agent-performance-list">
+          <div class="loading-row">
+            <div class="spinner"></div>
+            Loading agent performance data...
+          </div>
+        </div>
+      </div>
+
+      <!-- Tool Usage Ranking -->
+      <div class="dashboard-card">
+        <h3 class="dashboard-card-title">Tool Usage Ranking</h3>
+        <div class="tool-ranking-list" id="tool-ranking-list">
+          <div class="loading-row">
+            <div class="spinner"></div>
+            Loading tool usage data...
+          </div>
+        </div>
+      </div>
+
+      <!-- Daily Sessions Trend -->
+      <div class="dashboard-card" style="grid-column: 1 / -1;">
+        <h3 class="dashboard-card-title">Daily Sessions Trend (Last 7 Days)</h3>
+        <div class="trend-chart">
+          <div class="trend-bars" id="trend-bars">
+            <!-- Trend bars will be generated by JavaScript -->
+          </div>
+          <div class="trend-labels" id="trend-labels">
+            <!-- Date labels will be generated by JavaScript -->
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </main>
@@ -949,6 +1235,24 @@ function saveCfg(c) { localStorage.setItem(CFG_KEY, JSON.stringify(c)); }
 
 let cfg = Object.assign({ baseUrl: 'http://localhost:8000', tenantId: '', token: '' }, loadCfg());
 
+// Decode JWT payload without verifying signature to extract tid claim.
+// This is used only for client-side validation to help users catch
+// mismatched Tenant ID / JWT pairs before sending requests.
+function decodeJwtTid(token) {
+  if (!token) return null;
+  try {
+    const parts = token.split('.');
+    if (parts.length < 2) return null;
+    const payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const padded = payload + '='.repeat((4 - (payload.length % 4)) % 4);
+    const decoded = atob(padded);
+    const obj = JSON.parse(decoded);
+    return obj.tid ?? null;
+  } catch {
+    return null;
+  }
+}
+
 // ══════════════════════════════════════════════════════════
 //  API CLIENT
 // ══════════════════════════════════════════════════════════
@@ -980,7 +1284,9 @@ async function checkHealth() {
   healthDot.className = 'health-dot checking';
   healthText.textContent = 'checking';
   try {
-    const data = await fetch(cfg.baseUrl + '/health').then(r => r.json());
+    // Use the shared api() helper so configured headers (tenant / auth)
+    // are exercised when testing the connection.
+    const data = await api('GET', '/health');
     if (data.status === 'ok') {
       healthDot.className = 'health-dot ok';
       healthText.textContent = 'connected';
@@ -988,9 +1294,14 @@ async function checkHealth() {
       healthDot.className = 'health-dot degraded';
       healthText.textContent = 'degraded';
     }
-  } catch {
+  } catch (err) {
+    // api() throws with a message and status property when available
     healthDot.className = 'health-dot degraded';
     healthText.textContent = 'offline';
+    // Surface tenant-mismatch early in UI so users can correct config
+    if (err && err.status === 401) {
+      showToast('Unauthorized — check Tenant ID and JWT token in Configure API', true);
+    }
   }
 }
 
@@ -1110,6 +1421,13 @@ async function callTool(sessionId, toolName, inputParams) {
 // ══════════════════════════════════════════════════════════
 async function getAgentState(sessionId) {
   return api('GET', `/api/v1/agents/${sessionId}/state`);
+}
+
+// ══════════════════════════════════════════════════════════
+//  GET ALL AGENTS  →  GET /api/v1/agents/
+// ══════════════════════════════════════════════════════════
+async function getAllAgents() {
+  return api('GET', '/api/v1/agents/');
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1461,6 +1779,14 @@ document.getElementById('cfg-save').addEventListener('click', async () => {
   cfg.baseUrl  = document.getElementById('cfg-base-url').value.trim().replace(/\/$/, '');
   cfg.tenantId = document.getElementById('cfg-tenant-id').value.trim();
   cfg.token    = document.getElementById('cfg-token').value.trim();
+
+  // Validate that the JWT 'tid' claim (if present) matches provided Tenant ID.
+  const tidFromToken = decodeJwtTid(cfg.token);
+  if (tidFromToken && cfg.tenantId && tidFromToken !== cfg.tenantId) {
+    showToast('Tenant ID does not match JWT tid claim — correct them in Configure API', true);
+    return;
+  }
+
   saveCfg(cfg);
   closeConfigModal();
   showToast('Config saved — testing connection…');
@@ -1472,6 +1798,63 @@ document.getElementById('cfg-save').addEventListener('click', async () => {
 document.getElementById('report-modal-close').addEventListener('click', () => {
   document.getElementById('report-modal').classList.remove('open');
 });
+
+// ══════════════════════════════════════════════════════════
+//  AGENTS MODAL
+// ══════════════════════════════════════════════════════════
+function showAgentsModal(agents, count) {
+  // Create modal HTML dynamically
+  const modalHtml = `
+    <div class="modal-overlay open" id="agents-modal">
+      <div class="modal">
+        <div class="modal-header">
+          <div class="modal-header-title">All Agents (${count})</div>
+          <button class="modal-close" onclick="closeAgentsModal()">×</button>
+        </div>
+        <div class="modal-body" style="max-height: 400px; overflow-y: auto;">
+          ${agents.length === 0 ? 
+            '<div class="report-list-item">No agents found</div>' :
+            agents.map(agent => `
+              <div class="report-list-item" style="margin-bottom: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <strong>${agent.session_id}</strong>
+                    <span class="status-badge ${agent.status}" style="margin-left: 8px;">${agent.status}</span>
+                  </div>
+                  <div style="font-size: 11px; color: var(--text-muted);">
+                    ${agent.agent_type} · ${new Date(agent.created_at).toLocaleDateString()}
+                  </div>
+                </div>
+              </div>
+            `).join('')
+          }
+        </div>
+        <div class="modal-footer">
+          <button class="btn-ghost" onclick="closeAgentsModal()">Close</button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Remove existing modal if present
+  const existingModal = document.getElementById('agents-modal');
+  if (existingModal) {
+    existingModal.remove();
+  }
+  
+  // Add modal to body
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+  
+  // Add click outside to close
+  document.getElementById('agents-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeAgentsModal();
+  });
+}
+
+function closeAgentsModal() {
+  const modal = document.getElementById('agents-modal');
+  if (modal) modal.remove();
+}
 
 // ══════════════════════════════════════════════════════════
 //  FEATURE CARD (carousel)
@@ -1586,16 +1969,22 @@ document.querySelectorAll('.pill[data-task]').forEach(pill => {
     mainInput.value = pill.dataset.task;
     mainInput.style.height = 'auto';
     mainInput.style.height = mainInput.scrollHeight + 'px';
-    // select the correct agent type pill
-    const type = pill.dataset.type;
-    if (type) {
-      document.querySelectorAll('.agent-type-pill').forEach(p => {
-        p.classList.toggle('selected', p.dataset.type === type);
-      });
-      selectedAgent = type;
-    }
     mainInput.focus();
   });
+});
+
+// View All Agents button
+document.getElementById('view-all-agents').addEventListener('click', async () => {
+  try {
+    const data = await getAllAgents();
+    const agents = data.agents || [];
+    const count = data.count || 0;
+    
+    // Create a simple modal to display agents
+    showAgentsModal(agents, count);
+  } catch (err) {
+    showToast('Failed to fetch agents', true);
+  }
 });
 
 // ══════════════════════════════════════════════════════════
@@ -1621,6 +2010,208 @@ document.getElementById('connect-close').addEventListener('click', () => {
   row.style.opacity = '0';
   setTimeout(() => { row.style.display = 'none'; }, 200);
 });
+
+// ══════════════════════════════════════════════════════════
+//  DASHBOARD FUNCTIONALITY
+// ══════════════════════════════════════════════════════════
+let dashboardData = null;
+
+// Dashboard navigation
+document.getElementById('nav-dashboard').addEventListener('click', () => {
+  showDashboard();
+});
+
+function showDashboard() {
+  const hero = document.querySelector('.hero');
+  const dashboard = document.getElementById('dashboard');
+  
+  // Update active nav
+  document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+  document.getElementById('nav-dashboard').classList.add('active');
+  
+  // Show dashboard, hide hero
+  hero.classList.add('hidden');
+  dashboard.classList.add('active');
+  
+  // Load dashboard data
+  loadDashboardData();
+}
+
+function hideDashboard() {
+  const hero = document.querySelector('.hero');
+  const dashboard = document.getElementById('dashboard');
+  
+  // Update active nav
+  document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+  document.getElementById('nav-new-task').classList.add('active');
+  
+  // Show hero, hide dashboard
+  hero.classList.remove('hidden');
+  dashboard.classList.remove('active');
+}
+
+// Update nav-new-task click handler to hide dashboard
+document.getElementById('nav-new-task').addEventListener('click', () => {
+  hideDashboard();
+  const box = document.getElementById('input-box');
+  box.classList.remove('pulse');
+  void box.offsetWidth;
+  box.classList.add('pulse');
+  mainInput.focus();
+  box.addEventListener('animationend', () => box.classList.remove('pulse'), { once: true });
+});
+
+async function loadDashboardData() {
+  if (!cfg.tenantId || !cfg.token) {
+    showToast('Configure your Tenant ID and JWT token first (Configure API button)', true);
+    openConfigModal();
+    return;
+  }
+
+  try {
+    const response = await fetch(`${cfg.baseUrl}/api/${cfg.tenantId}/insights`, {
+      headers: {
+        'X-Tenant-ID': cfg.tenantId,
+        'Authorization': `Bearer ${cfg.token}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    dashboardData = await response.json();
+    renderDashboard();
+  } catch (error) {
+    console.error('Failed to load dashboard data:', error);
+    showToast('Failed to load dashboard data', true);
+  }
+}
+
+function renderDashboard() {
+  if (!dashboardData) return;
+
+  // Render summary stats
+  renderSummaryStats();
+  
+  // Render agent performance
+  renderAgentPerformance();
+  
+  // Render tool usage ranking
+  renderToolUsageRanking();
+  
+  // Render daily sessions trend
+  renderDailySessionsTrend();
+}
+
+function renderSummaryStats() {
+  const stats = dashboardData.session_statistics;
+  const toolUsage = dashboardData.tool_usage;
+  
+  document.getElementById('total-sessions').textContent = stats.total_sessions || 0;
+  document.getElementById('completion-rate').textContent = `${stats.completion_rate || 0}%`;
+  document.getElementById('total-tool-calls').textContent = toolUsage.total_calls || 0;
+  document.getElementById('avg-duration').textContent = `${Math.round(stats.avg_session_duration_sec || 0)}s`;
+}
+
+function renderAgentPerformance() {
+  const container = document.getElementById('agent-performance-list');
+  const agentData = dashboardData.agent_performance_by_type || [];
+  
+  if (agentData.length === 0) {
+    container.innerHTML = '<div class="report-list-item">No agent performance data available</div>';
+    return;
+  }
+  
+  const maxSessions = Math.max(...agentData.map(a => a.session_count));
+  
+  const html = agentData.map(agent => {
+    const percentage = (agent.session_count / maxSessions) * 100;
+    const completionRate = agent.session_count > 0 ? 
+      Math.round((agent.completed_count / agent.session_count) * 100) : 0;
+    
+    return `
+      <div class="agent-performance-item">
+        <div class="agent-type-label">${agent.agent_type}</div>
+        <div class="agent-performance-bar">
+          <div class="agent-performance-fill" style="width: ${percentage}%"></div>
+        </div>
+        <div class="agent-performance-stats">
+          ${agent.session_count} sessions · ${completionRate}% success
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  container.innerHTML = html;
+}
+
+function renderToolUsageRanking() {
+  const container = document.getElementById('tool-ranking-list');
+  const toolData = dashboardData.tool_usage.tool_breakdown || [];
+  
+  if (toolData.length === 0) {
+    container.innerHTML = '<div class="report-list-item">No tool usage data available</div>';
+    return;
+  }
+  
+  const html = toolData.slice(0, 10).map((tool, index) => {
+    const successRate = tool.call_count > 0 ? 
+      Math.round((tool.success_count / tool.call_count) * 100) : 0;
+    
+    return `
+      <div class="tool-ranking-item">
+        <div class="tool-rank">#${index + 1}</div>
+        <div class="tool-name">${tool.tool_name}</div>
+        <div class="tool-count">${tool.call_count} calls</div>
+        <div class="tool-success-rate">${successRate}%</div>
+      </div>
+    `;
+  }).join('');
+  
+  container.innerHTML = html;
+}
+
+function renderDailySessionsTrend() {
+  const barsContainer = document.getElementById('trend-bars');
+  const labelsContainer = document.getElementById('trend-labels');
+  const trendData = dashboardData.daily_sessions_trend || [];
+  
+  if (trendData.length === 0) {
+    barsContainer.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:40px;">No daily trend data available</div>';
+    labelsContainer.innerHTML = '';
+    return;
+  }
+  
+  const maxSessions = Math.max(...trendData.map(d => d.session_count));
+  
+  // Generate trend bars
+  const barsHtml = trendData.map(day => {
+    const height = maxSessions > 0 ? (day.session_count / maxSessions) * 100 : 0;
+    const date = new Date(day.date);
+    const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    
+    return `
+      <div class="trend-bar" style="height: ${height}%">
+        <div class="trend-bar-tooltip">
+          ${dateStr}<br>
+          Sessions: ${day.session_count}<br>
+          Completed: ${day.completed_count}<br>
+          Failed: ${day.failed_count}
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  // Generate date labels
+  const labelsHtml = trendData.map(day => {
+    const date = new Date(day.date);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }).join('');
+  
+  barsContainer.innerHTML = barsHtml;
+  labelsContainer.innerHTML = labelsHtml;
+}
 
 // ══════════════════════════════════════════════════════════
 //  INIT

@@ -15,7 +15,10 @@ from app.middleware import tenant_middleware
 from app.routes.agents import router as agents_router
 from app.routes.auth import router as auth_router
 from app.routes.health import router as health_router
+from app.routes.insights import router as insights_router
 from app.routes.meta_agent import router as meta_agent_router
+from app.routes.sessions import router as sessions_router
+from app.routes.insights import router as insights_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -34,5 +37,8 @@ app.middleware("http")(tenant_middleware)
 
 app.include_router(health_router)
 app.include_router(agents_router)
+app.include_router(insights_router)
 app.include_router(meta_agent_router)
 app.include_router(auth_router)
+app.include_router(insights_router)
+app.include_router(sessions_router)

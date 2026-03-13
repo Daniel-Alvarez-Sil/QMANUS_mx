@@ -7,7 +7,7 @@ pulling in database or HTTP machinery.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, List
 
 from pydantic import BaseModel, field_validator
 
@@ -38,3 +38,50 @@ class ToolCallRequest(BaseModel):
         if v not in _VALID_TOOLS:
             raise ValueError(f"tool_name must be one of {sorted(_VALID_TOOLS)}")
         return v
+
+
+class ToolUsageStats(BaseModel):
+    tool_name: str
+    call_count: int
+    avg_latency_ms: float
+    success_count: int
+    failure_count: int
+
+
+class ErrorPattern(BaseModel):
+    error_type: str
+    error_count: int
+    last_occurrence: str
+
+
+class SessionStatistics(BaseModel):
+    total_sessions: int
+    unique_agent_types: int
+    avg_session_duration_sec: float
+    completion_rate: float
+    completed_sessions: int
+    failed_sessions: int
+
+
+class ToolUsage(BaseModel):
+    total_calls: int
+    overall_success_rate: float
+    tool_breakdown: List[ToolUsageStats]
+
+
+class ErrorAnalysis(BaseModel):
+    total_errors: int
+    error_patterns: List[ErrorPattern]
+
+
+class PerformanceMetrics(BaseModel):
+    avg_tool_latency_ms: float
+
+
+class InsightsResponse(BaseModel):
+    tenant_id: str
+    period: str
+    session_statistics: SessionStatistics
+    tool_usage: ToolUsage
+    error_analysis: ErrorAnalysis
+    performance_metrics: PerformanceMetrics
