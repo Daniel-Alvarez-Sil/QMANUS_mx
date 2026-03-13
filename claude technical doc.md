@@ -1,461 +1,470 @@
-# Documento Técnico — Multi-Tenant SaaS Platform
-### Alibaba Cloud + TiDB + Qwen AI · Escenario A: GameVault Corp
-
-> **Duración:** 6 horas · **Equipo:** 3 integrantes · **Puntaje total:** 100 pts
-
----
-
-## Tabla de Contenidos
-
-1. [Visión General de la Arquitectura](#1-visión-general-de-la-arquitectura)
-2. [Roles del Equipo](#2-roles-del-equipo)
-3. [Desglose de Tareas por Integrante](#3-desglose-de-tareas-por-integrante)
-4. [Prompts Útiles](#4-prompts-útiles)
-5. [Referencia SQL — Comandos Clave](#5-referencia-sql--comandos-clave)
-6. [Cronograma de 6 Horas](#6-cronograma-de-6-horas)
-7. [Rúbrica de Evaluación](#7-rúbrica-de-evaluación)
-8. [Script del Demo (5 Minutos)](#8-script-del-demo-5-minutos)
-9. [Configuración del Entorno](#9-configuración-del-entorno)
+# 🧠 AgentNexus
+## Multi-Tenant Agentic AI Platform — Technical Document
+### Hackathon Build | Alibaba Cloud × TiDB × Qwen
 
 ---
 
-## 1. Visión General de la Arquitectura
-
-La plataforma implementa cuatro capas lógicas interconectadas sobre infraestructura de Alibaba Cloud, con TiDB como backbone de base de datos distribuida multi-tenant.
-
-| Capa | Servicio | Responsabilidad |
-|------|----------|-----------------|
-| **Datos** | TiDB Cloud | Schemas multi-tenant, TiFlash HTAP, RBAC, SQL Views |
-| **Aplicación** | Alibaba ECS | REST API Python/Node.js, routing por `tenant_id` |
-| **IA** | Model Studio (Qwen-Plus) | Recomendaciones LLM, respuestas JSON estructuradas |
-| **Analytics** | Quick BI | Dashboards conectados a SQL Views por tenant |
-
-### 1.1 Rutas de Conexión de Red
-
-Existen **tres rutas distintas** que el equipo debe configurar:
-
-- **ECS → TiDB Cloud:** TLS, puerto 4000. IP de ECS debe estar en allowlist de TiDB Cloud.
-- **Quick BI → TiDB Cloud:** TLS, puerto 4000. IPs egress de Quick BI en allowlist.
-- **ECS → Model Studio (Qwen):** HTTPS puro. Base URL: `https://dashscope-intl.aliyuncs.com/compatible-mode/v1`
+> **Tiempo de build:** 60 minutos | **Equipo:** 3 personas | **Stack:** TiDB · Alibaba Cloud · Qwen AI
 
 ---
 
-## 2. Roles del Equipo
+## The Problem We Solve
 
-| Rol | Integrante | Alcance |
-|-----|-----------|---------|
-| 🏗️ **Arquitecto / Infra** | Integrante 1 | VPC, ECS, Security Group, RAM, arquitectura general, slide del demo |
-| ⚙️ **Backend Developer** | Integrante 2 | REST API (FastAPI/Express), integración Qwen, seed data, endpoints |
-| 🗄️ **Data Engineer** | Integrante 3 | TiDB schemas, RBAC, TiFlash, Plan Binding, SQL Views, Quick BI |
-
----
-
-## 3. Desglose de Tareas por Integrante
-
-### 3.1 Integrante 1 — Arquitecto / Infraestructura
-
-| # | Tarea | Tiempo | Prioridad |
-|---|-------|--------|-----------|
-| 1 | Crear VPC (CIDR `10.0.0.0/16`) + vSwitch (`10.0.1.0/24`) en Singapore | 15 min | 🔴 CRÍTICA |
-| 2 | Configurar Security Group: inbound 22/80/443, outbound TCP 4000 y 443 | 10 min | 🔴 CRÍTICA |
-| 3 | Lanzar instancia ECS Ubuntu 22.04 (4 vCPU / 8 GB), asignar Elastic IP | 15 min | 🔴 CRÍTICA |
-| 4 | Crear RAM user con permisos ECS + Model Studio. **NO usar root.** | 10 min | 🟡 ALTA |
-| 5 | Instalar Python 3.11 + dependencias en ECS (FastAPI, openai, pymysql, uvicorn) | 15 min | 🔴 CRÍTICA |
-| 6 | Configurar variables de entorno en ECS: `TIDB_HOST`, `TIDB_PORT`, `DASHSCOPE_API_KEY` | 10 min | 🔴 CRÍTICA |
-| 7 | Preparar slide de arquitectura para demo (1 slide: capas TiDB / ECS / Qwen / BI) | 20 min | 🟡 ALTA |
-| 8 | Obtener IP de ECS y agregarla al allowlist de TiDB Cloud | 10 min | 🔴 CRÍTICA |
-| 9 | Verificar conectividad ECS → TiDB Cloud (`mysql -h <host> -P 4000 -u admin -p`) | 10 min | 🔴 CRÍTICA |
-| 10 | Coordinar y liderar ensayo del demo script (5 min) | 30 min | 🟡 ALTA |
-
----
-
-### 3.2 Integrante 2 — Backend Developer
-
-| # | Tarea | Tiempo | Prioridad |
-|---|-------|--------|-----------|
-| 1 | Escribir `POST /api/{store_id}/purchase` (inserta en `orders` + `order_items` del tenant) | 25 min | 🔴 CRÍTICA |
-| 2 | Escribir `GET /api/{store_id}/recommend/{customer_id}` (query TiDB → Qwen → store rec) | 35 min | 🔴 CRÍTICA |
-| 3 | Implementar función de contexto Qwen: últimas 20 compras → JSON → system prompt → parse JSON | 30 min | 🔴 CRÍTICA |
-| 4 | Agregar manejo de errores: `tenant_id` inválido → 404; Qwen falla → 503 | 15 min | 🟡 ALTA |
-| 5 | Configurar connection pool **por tenant** (usar DB user del tenant, nunca el admin) | 20 min | 🔴 CRÍTICA |
-| 6 | Ejecutar script de seed data (100+ games, 50+ customers, 200+ orders por store) | 20 min | 🟡 ALTA |
-| 7 | Verificar que no hay credenciales hardcodeadas (todo via env vars) | 10 min | 🟡 ALTA |
-| 8 | Levantar servidor (`uvicorn main:app --host 0.0.0.0 --port 80`) y probar con curl | 15 min | 🔴 CRÍTICA |
-| 9 | Escribir script de write stream continuo para demo del Online DDL (loop POST) | 15 min | 🟠 MEDIA |
-| 10 | Documentar ejemplos de curl para cada endpoint (para usar durante el demo) | 15 min | 🟡 ALTA |
-
----
-
-### 3.3 Integrante 3 — Data Engineer
-
-| # | Tarea | Tiempo | Prioridad |
-|---|-------|--------|-----------|
-| 1 | **[M1]** Escribir y ejecutar script de provisioning: `CREATE DATABASE`, tablas, user, GRANT, SQL Views para 5 stores | 40 min | 🔴 CRÍTICA |
-| 2 | **[M1]** Verificar que el script agrega el 6to tenant en <60s. Probar en dry-run. | 10 min | 🔴 CRÍTICA |
-| 3 | **[RBAC]** Verificar aislamiento: conectar como `user_store_alpha` → `SHOW DATABASES` → ACCESS DENIED en `store_beta` | 15 min | 🔴 CRÍTICA |
-| 4 | **[M3]** Habilitar TiFlash en `games`, `orders`, `order_items` para los 5 tenants. Esperar `AVAILABLE=1`. | 20 min | 🔴 CRÍTICA |
-| 5 | **[M3]** Verificar `cop[tiflash]` en EXPLAIN de la query analítica. Capturar evidencia. | 10 min | 🔴 CRÍTICA |
-| 6 | **[M2]** Crear `GLOBAL BINDING` para query cross-tenant (genre + COUNT). Verificar reuso de plan. | 20 min | 🟡 ALTA |
-| 7 | **[M4]** Demo Online DDL: lanzar write stream → `ALTER TABLE ADD COLUMN` → confirmar 0 downtime | 20 min | 🟡 ALTA |
-| 8 | Configurar Quick BI: agregar IPs egress → crear datasource → 3 datasets sobre SQL Views | 30 min | 🟡 ALTA |
-| 9 | Construir dashboard Quick BI: bar chart (ventas por género), top titles, daily revenue trend | 30 min | 🟡 ALTA |
-| 10 | Verificar aislamiento en Quick BI: insertar en `store_beta` → confirmar que dashboard `store_alpha` NO cambia | 10 min | 🟡 ALTA |
-
----
-
-## 4. Prompts Útiles
-
-### 4.1 System Prompt Principal — Qwen Recomendaciones (GameVault)
-
-Usar como `system` message. Exigir **SOLO JSON**, sin texto libre:
+Enterprises need autonomous AI agents that can run **multi-step tasks** (research, code gen, data analysis) with **complete isolation** between clients — all on shared infrastructure.
 
 ```
-You are a video game recommendation engine for an e-commerce platform.
-You will receive a customer's purchase history as structured JSON.
-Analyze genres, platforms, spending patterns, and recency.
-Respond ONLY with a valid JSON object — no preamble, no markdown, no backticks:
+Enterprise A's agents → INVISIBLE to Enterprise B
+Enterprise B's agents → INVISIBLE to Enterprise A
+Both → Same TiDB cluster, different execution universes
+```
 
-{
-  "recommendations": [
-    {"title": "...", "genre": "...", "platform": "...", "reason": "..."},
-    {"title": "...", "genre": "...", "platform": "...", "reason": "..."},
-    {"title": "...", "genre": "...", "platform": "...", "reason": "..."}
-  ],
-  "summary": "brief overall insight about this customer"
+**The X×Y×Z Problem:**
+```
+X tenants × Y agents each × Z parallel branches = massive write amplification
+TiDB solves this without degrading any single tenant
+```
+
+---
+
+## Architecture (3-Layer)
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  LAYER 1 — AGENT ORCHESTRATION                          │
+│                                                         │
+│  Meta-Agent (Qwen)                                      │
+│  ├── Analyzes completed task logs                       │
+│  ├── Recommends: better tool sequences                  │
+│  ├── Detects: common failure patterns                   │
+│  └── Optimizes: agent efficiency per tenant             │
+│                                                         │
+│  Per-Tenant Agents                                      │
+│  └── Research · Code Gen · Data Analysis · Web Tools   │
+└──────────────────────────┬──────────────────────────────┘
+                           │
+┌──────────────────────────▼──────────────────────────────┐
+│  LAYER 2 — ALIBABA CLOUD INFRASTRUCTURE                 │
+│                                                         │
+│  API Gateway ──► ACK (Kubernetes) ──► RocketMQ          │
+│  PAI-EAS (Qwen serving) ──► OSS (knowledge base)       │
+│  RAM (tenant IAM) ──► SLS (audit logs)                  │
+└──────────────────────────┬──────────────────────────────┘
+                           │
+┌──────────────────────────▼──────────────────────────────┐
+│  LAYER 3 — TiDB AS AGENT LONG-TERM MEMORY              │
+│                                                         │
+│  TiKV (OLTP)              TiFlash (OLAP)                │
+│  ├── agent_sessions       ├── task_analytics            │
+│  ├── task_plans           ├── failure_patterns          │
+│  ├── tool_call_history    ├── tenant_metrics            │
+│  └── execution_logs       └── optimization_vectors      │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## The 4 Core Pillars
+
+### 🔒 Pillar 1 — Tenant Isolation
+
+Every agent session, execution log, and knowledge base artifact is **invisible across tenants** even on shared infrastructure.
+
+**Implementation:**
+```sql
+-- Row-Level Security enforced at app layer + DB level
+-- EVERY query mandates tenant_id as partition key
+
+CREATE TABLE agent_sessions (
+    session_id    VARCHAR(36)  NOT NULL,
+    tenant_id     VARCHAR(36)  NOT NULL,   -- ← ISOLATION KEY
+    agent_type    ENUM('research','codegen','data','web') NOT NULL,
+    status        ENUM('running','completed','failed','paused'),
+    task_plan     JSON,                    -- structured multi-step plan
+    context       JSON,                    -- agent working memory
+    created_at    TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP(3),
+    updated_at    TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP(3)
+                  ON UPDATE CURRENT_TIMESTAMP(3),
+    PRIMARY KEY (tenant_id, session_id),
+    INDEX idx_status (tenant_id, status, created_at)
+) PARTITION BY HASH(tenant_id) PARTITIONS 32;
+
+-- Knowledge base: each tenant's docs are partitioned
+CREATE TABLE knowledge_base (
+    doc_id        VARCHAR(36)  NOT NULL,
+    tenant_id     VARCHAR(36)  NOT NULL,
+    content       LONGTEXT,
+    embedding     BLOB,                    -- 1536-dim vector
+    metadata      JSON,
+    PRIMARY KEY (tenant_id, doc_id)
+) PARTITION BY HASH(tenant_id) PARTITIONS 32;
+```
+
+**Middleware enforcement (every API call):**
+```python
+@middleware
+async def tenant_isolation(request, call_next):
+    token = verify_jwt(request.headers["Authorization"])
+    tenant_id = token["tid"]
+    
+    # Inject into ALL downstream DB queries via context var
+    ctx_tenant.set(tenant_id)
+    
+    # Every TiDB query builder auto-appends:
+    # WHERE tenant_id = {ctx_tenant.get()}
+    response = await call_next(request)
+    return response
+```
+
+---
+
+### 💾 Pillar 2 — Agent State Persistence (TiDB as Agent Memory)
+
+TiDB is not just storage — **it IS the agent's brain.** Each agent session maintains:
+
+```
+task_plans          → What the agent intends to do (steps 1–N)
+intermediate_results → What it has found/computed so far
+tool_call_history   → Every tool invoked, params, result, latency
+final_outputs       → Completed deliverable
+```
+
+**Schema:**
+```sql
+CREATE TABLE tool_call_history (
+    call_id       VARCHAR(36)  NOT NULL,
+    session_id    VARCHAR(36)  NOT NULL,
+    tenant_id     VARCHAR(36)  NOT NULL,
+    tool_name     VARCHAR(100) NOT NULL,   -- 'web_search','code_exec','db_query'
+    input_params  JSON         NOT NULL,
+    output_result JSON,
+    status        ENUM('pending','success','failed','timeout'),
+    latency_ms    INT,
+    called_at     TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP(3),
+    PRIMARY KEY (tenant_id, session_id, call_id),
+    INDEX idx_tool (tenant_id, tool_name, called_at)
+) PARTITION BY HASH(tenant_id) PARTITIONS 32;
+
+-- TiFlash replica for analytics WITHOUT competing with agent writes
+ALTER TABLE tool_call_history SET TIFLASH REPLICA 1;
+ALTER TABLE agent_sessions    SET TIFLASH REPLICA 1;
+```
+
+**Agent State Machine:**
+```
+IDLE → PLANNING → EXECUTING → [TOOL_CALL loop] → SYNTHESIZING → COMPLETED
+                     ↑                                  |
+                     └──── retry on failure ────────────┘
+                     (state persisted in TiDB at each step)
+```
+
+---
+
+### ⚡ Pillar 3 — Scalability Under Concurrency
+
+**Scenario:** Tenant launches 50 agents simultaneously.
+
+```
+50 agents × 10 tool calls each × 3 retries = 1,500 potential writes/minute
+```
+
+**TiDB's answer: HTAP separation**
+
+```
+Agent writes → TiKV (OLTP)   — never blocked, optimistic concurrency
+Analytics   → TiFlash (OLAP) — replica, zero impact on write path
+
+TiDB Placement Rules:
+  - Hot tenants (>100 agents/hr) → dedicated TiKV regions
+  - Cold tenants               → shared regions
+  - Analytical workloads       → always TiFlash
+```
+
+**Concurrency control:**
+```python
+# Per-tenant agent slot limiter (Redis/Tair)
+async def launch_agent(tenant_id: str, agent_config: dict):
+    plan_key = f"slots:{tenant_id}"
+    
+    current = await tair.incr(plan_key)
+    await tair.expire(plan_key, 3600)
+    
+    tenant_plan = await get_tenant_plan(tenant_id)
+    max_agents = PLAN_LIMITS[tenant_plan]  # starter:5, growth:25, enterprise:200
+    
+    if current > max_agents:
+        await tair.decr(plan_key)
+        raise TenantQuotaExceeded(f"Max {max_agents} concurrent agents for plan")
+    
+    return await create_agent_session(tenant_id, agent_config)
+```
+
+---
+
+### 🤖 Pillar 4 — AI Orchestration (Qwen Meta-Agent)
+
+A **meta-agent** powered by Qwen reads completed task logs and generates optimization recommendations for each tenant.
+
+**Qwen Integration (PAI-EAS):**
+```python
+async def run_meta_agent(tenant_id: str):
+    # Pull last 24hr completed sessions from TiFlash (analytical query)
+    logs = await db.fetch_all("""
+        SELECT 
+            s.session_id,
+            s.agent_type,
+            s.task_plan,
+            JSON_ARRAYAGG(
+                JSON_OBJECT(
+                    'tool', t.tool_name,
+                    'latency_ms', t.latency_ms,
+                    'status', t.status
+                )
+            ) as tool_sequence,
+            s.status as final_status
+        FROM agent_sessions s
+        JOIN tool_call_history t 
+          ON s.session_id = t.session_id 
+         AND s.tenant_id = t.tenant_id
+        WHERE s.tenant_id = :tenant_id
+          AND s.created_at > NOW() - INTERVAL 24 HOUR
+          AND s.status IN ('completed', 'failed')
+        GROUP BY s.session_id
+        -- Runs on TiFlash, never touches TiKV write path
+    """, {"tenant_id": tenant_id})
+    
+    # Send to Qwen on PAI-EAS
+    qwen_response = await pai_eas_client.chat(
+        model="qwen-max",
+        messages=[{
+            "role": "system",
+            "content": """You are an AI orchestration optimizer. 
+            Analyze agent execution logs and return JSON with:
+            - failure_patterns: list of recurring failure causes
+            - tool_optimizations: better tool sequences per task type  
+            - efficiency_score: 0-100 for this tenant's agent usage
+            - top_3_recommendations: actionable improvements"""
+        }, {
+            "role": "user", 
+            "content": f"Analyze these agent logs for tenant {tenant_id}:\n{json.dumps(logs)}"
+        }]
+    )
+    
+    # Persist recommendations back to TiDB
+    await save_optimization_report(tenant_id, qwen_response)
+```
+
+---
+
+## API Endpoints (Build Priority Order)
+
+```
+Priority 1 — Core (build first 20 min)
+  POST /api/v1/agents/launch          → Start agent session
+  GET  /api/v1/agents/{id}/state      → Get current agent state
+  POST /api/v1/agents/{id}/tools/call → Execute a tool, persist result
+
+Priority 2 — Isolation (build next 20 min)
+  GET  /api/v1/sessions               → List tenant's own sessions only
+  GET  /api/v1/knowledge              → Tenant's knowledge base
+  POST /api/v1/knowledge/upload       → Add doc to tenant KB
+
+Priority 3 — AI (build final 20 min)
+  GET  /api/v1/meta-agent/report      → Qwen optimization report
+  GET  /api/v1/analytics/patterns     → Failure patterns (TiFlash query)
+  GET  /api/v1/analytics/efficiency   → Tenant efficiency metrics
+```
+
+---
+
+## Division of Work — 60 Minutes
+
+### 👷 Person 1: Arquitecto Cloud (Min 0–60)
+
+```
+Min 00–15: TiDB Schema
+  └── Run DDL for all 5 tables in TiDB Cloud (free tier)
+  └── Enable TiFlash replicas on tool_call_history + agent_sessions
+  └── Insert seed data: 2 tenants, 10 agent sessions each
+
+Min 15–35: Alibaba Cloud Setup  
+  └── API Gateway: create 2 routes with X-Tenant-ID header validation
+  └── RAM: create service account with TiDB access
+  └── Configure JWT validation (use HS256 for hackathon speed)
+
+Min 35–55: Integration Test
+  └── Verify cross-tenant query isolation (Tenant A cannot see Tenant B)
+  └── Test concurrent inserts: 50 rows simultaneous, check no deadlock
+  └── Demo TiFlash vs TiKV query on same data (show speed difference)
+
+Min 55–60: Slide prep
+  └── Screenshot of TiDB cluster dashboard
+  └── Screenshot of API Gateway with tenant headers
+```
+
+### ⚙️ Person 2: Backend Engineer (Min 0–60)
+
+```
+Min 00–20: FastAPI Boilerplate + Middleware
+  └── pip install fastapi uvicorn aiomysql python-jose tqdm
+  └── Tenant isolation middleware (JWT → tenant_id → context var)
+  └── TiDB connection pool (1 pool per tenant, max 10 conn each)
+
+Min 20–40: Core Endpoints
+  └── POST /agents/launch  → INSERT into agent_sessions
+  └── POST /agents/{id}/tools/call → INSERT into tool_call_history
+  └── GET /agents/{id}/state → SELECT with tenant_id guard
+
+Min 40–55: Qwen Integration
+  └── Call Qwen via DashScope API (alibabacloud SDK)
+  └── GET /meta-agent/report → query TiFlash + call Qwen + return JSON
+
+Min 55–60: Run server + test with curl
+  └── curl -H "X-Tenant-ID: tenant-A" /agents  
+  └── Confirm tenant-B header returns 0 results for same query
+```
+
+**Key code snippet (paste and run):**
+```python
+# main.py — complete hackathon backend in ~80 lines
+from fastapi import FastAPI, Request, HTTPException, Depends
+from contextvars import ContextVar
+import aiomysql, json, os
+from jose import jwt
+
+app = FastAPI(title="AgentNexus")
+ctx_tenant: ContextVar[str] = ContextVar("tenant_id")
+
+TIDB_CONFIG = {
+    "host": os.getenv("TIDB_HOST"),
+    "port": 4000,
+    "user": os.getenv("TIDB_USER"),
+    "password": os.getenv("TIDB_PASS"),
+    "db": "agentnexus",
+    "ssl": {"ssl_mode": "VERIFY_IDENTITY"}
 }
+
+@app.middleware("http")
+async def tenant_middleware(request: Request, call_next):
+    token = request.headers.get("Authorization", "").replace("Bearer ", "")
+    tenant_id = request.headers.get("X-Tenant-ID")
+    if not tenant_id:
+        raise HTTPException(401, "Missing X-Tenant-ID header")
+    ctx_tenant.set(tenant_id)
+    return await call_next(request)
+
+@app.post("/api/v1/agents/launch")
+async def launch_agent(body: dict):
+    tid = ctx_tenant.get()
+    session_id = str(__import__("uuid").uuid4())
+    conn = await aiomysql.connect(**TIDB_CONFIG)
+    async with conn.cursor() as cur:
+        await cur.execute("""
+            INSERT INTO agent_sessions 
+            (session_id, tenant_id, agent_type, status, task_plan, context)
+            VALUES (%s, %s, %s, 'planning', %s, %s)
+        """, (session_id, tid, body["agent_type"], 
+              json.dumps(body.get("task_plan", {})),
+              json.dumps(body.get("context", {}))))
+        await conn.commit()
+    conn.close()
+    return {"session_id": session_id, "tenant_id": tid, "status": "planning"}
+
+@app.get("/api/v1/agents/{session_id}/state")
+async def get_state(session_id: str):
+    tid = ctx_tenant.get()  # tenant isolation enforced
+    conn = await aiomysql.connect(**TIDB_CONFIG)
+    async with conn.cursor(aiomysql.DictCursor) as cur:
+        await cur.execute("""
+            SELECT * FROM agent_sessions 
+            WHERE session_id = %s AND tenant_id = %s  -- ← isolation
+        """, (session_id, tid))
+        row = await cur.fetchone()
+    conn.close()
+    if not row:
+        raise HTTPException(404, "Session not found for this tenant")
+    return row
 ```
 
-**User message template** (reemplazar con datos reales de TiDB):
+### 📊 Person 3: Data Engineer (Min 0–60)
 
 ```
-Customer ID: {customer_id}
-Customer Name: {name}
-Recent Purchases (last 20):
-{JSON.stringify(purchases, null, 2)}
-Available games in catalog not yet purchased:
-{JSON.stringify(available_games.slice(0, 20), null, 2)}
-```
+Min 00–20: TiDB Schema + Seed Data
+  └── CREATE all tables (copy from this doc)
+  └── ALTER TABLE ... SET TIFLASH REPLICA 1 (run on completed tables)
+  └── Seed: INSERT 2 tenants, 20 agent sessions, 100 tool calls
 
----
+Min 20–40: Qwen Meta-Agent Query
+  └── Write the TiFlash analytical query (see Pillar 4 above)
+  └── Test: run query on TiFlash vs TiKV, compare latency
+  └── Format output for Qwen prompt
 
-### 4.2 Prompt Anti-Freetext (si Qwen no responde en JSON)
+Min 40–55: Demo Data + Visualizations
+  └── Create "failure scenario": 10 tool calls with status='failed'
+  └── Run Qwen analysis → capture JSON output
+  └── Prepare: table showing efficiency before vs after Qwen recommendations
 
-Agregar al final del system prompt si Qwen responde con texto libre:
-
-```
-IMPORTANT: You MUST respond with ONLY valid JSON.
-No explanation, no markdown, no backticks.
-Your entire response must be parseable by JSON.parse().
-If you cannot provide recommendations, return:
-{"recommendations": [], "summary": "insufficient data"}
-```
-
----
-
-### 4.3 Prompts para Generar Código con IA
-
-**Backend — Endpoint de recomendación:**
-
-```
-Genera un endpoint en FastAPI (Python) llamado:
-GET /api/{store_id}/recommend/{customer_id}
-
-Que haga lo siguiente:
-1. Conecte a TiDB usando el DB user del tenant (store_id determina el schema y el user)
-2. Consulte las últimas 20 compras del customer_id en ese schema
-3. Formatee los datos como JSON limpio
-4. Llame a Qwen-Plus via openai SDK (base_url=dashscope-intl, api_key=env var)
-5. Parsee la respuesta JSON de Qwen
-6. Guarde el resultado en la tabla recommendations del schema
-7. Retorne el JSON al cliente
-
-No uses credenciales hardcodeadas. Usa connection pooling. Maneja errores con HTTP status codes correctos.
-```
-
-**Data Layer — Script de provisioning:**
-
-```
-Escribe un script Python que provisione un nuevo tenant de GameVault en TiDB.
-El script recibe: TENANT_NAME (ej: store_gamma)
-
-El script debe ejecutar en orden:
-1. CREATE DATABASE {tenant_name}
-2. CREATE TABLEs: games, customers, orders, order_items, recommendations con los schemas exactos
-   - Usar AUTO_RANDOM en game_id, order_id
-3. CREATE USER '{prefix}.user_{tenant_name}'@'%' IDENTIFIED BY '{password}'
-4. GRANT SELECT, INSERT, UPDATE ON {tenant_name}.* TO ese usuario
-5. ALTER TABLE games SET TIFLASH REPLICA 1 (igual para orders y order_items)
-6. CREATE VIEW sales_by_genre, top_titles_this_week, daily_revenue
-
-El script completo debe ejecutar en menos de 60 segundos.
-```
-
----
-
-### 4.4 Q&A — Respuestas para los Jueces
-
-| Pregunta del Juez | Respuesta Sugerida |
-|-------------------|--------------------|
-| ¿Qué pasa si el Resource Group de un tenant se agota? | TiDB throttlea las queries de ese tenant sin afectar a los demás. Los `RU_PER_SEC` actúan como circuit breaker por tenant. |
-| ¿Cómo ayuda el plan binding a 500 tenants? | Todos los tenants ejecutan las mismas queries estructuralmente. Un solo `GLOBAL BINDING` garantiza que el optimizador usa el plan óptimo sin divergencia, eliminando plan regression. |
-| ¿Por qué elegiste qwen-plus sobre qwen-max? | qwen-plus tiene razonamiento suficiente para recomendaciones contextuales y es ~4x más económico. En un hackathon de 6h el budget es limitado y qwen-plus cumple el objetivo. |
-| ¿Cómo agregarías el tenant 50? | Ejecutar el provisioning script con el nuevo nombre. Crea DB, tablas, user, RBAC y TiFlash en <60s sin cambios en el código de la aplicación. |
-| ¿Por qué AUTO_RANDOM y no AUTO_INCREMENT? | AUTO_INCREMENT crea hotspots: todos los inserts van al mismo nodo TiKV. AUTO_RANDOM distribuye los IDs aleatoriamente entre regiones, maximizando el throughput paralelo de múltiples tenants. |
-
----
-
-## 5. Referencia SQL — Comandos Clave
-
-### 5.1 Módulo 1: Provisioning del Schema
-
-```sql
--- Crear schema del tenant
-CREATE DATABASE store_alpha;
-
--- Tabla games con AUTO_RANDOM
-CREATE TABLE store_alpha.games (
-  game_id      BIGINT PRIMARY KEY AUTO_RANDOM,
-  title        VARCHAR(200) NOT NULL,
-  genre        ENUM('Action','RPG','Strategy','Sports','Indie','Horror'),
-  platform     VARCHAR(50),
-  price        DECIMAL(8,2),
-  release_date DATE,
-  stock        INT DEFAULT 0
-);
-
--- Tabla orders con AUTO_RANDOM
-CREATE TABLE store_alpha.orders (
-  order_id     BIGINT PRIMARY KEY AUTO_RANDOM,
-  customer_id  BIGINT NOT NULL,
-  total_amount DECIMAL(10,2),
-  status       ENUM('pending','completed','refunded') DEFAULT 'completed',
-  ordered_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Tabla recommendations para guardar output de Qwen
-CREATE TABLE store_alpha.recommendations (
-  rec_id         BIGINT PRIMARY KEY AUTO_RANDOM,
-  customer_id    BIGINT NOT NULL,
-  game_ids       JSON,
-  qwen_reasoning TEXT,
-  generated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+Min 55–60: Demo script
+  └── Write step-by-step curl commands for live demo
+  └── Prepare: "Tenant A cannot see Tenant B" isolation proof screenshot
 ```
 
 ---
 
-### 5.2 Módulo 3: Habilitar TiFlash HTAP
-
-```sql
--- Habilitar réplicas columnar en tablas analíticas
-ALTER TABLE store_alpha.games       SET TIFLASH REPLICA 1;
-ALTER TABLE store_alpha.orders      SET TIFLASH REPLICA 1;
-ALTER TABLE store_alpha.order_items SET TIFLASH REPLICA 1;
-
--- Verificar sincronización (esperar AVAILABLE = 1, tarda 2-5 min)
-SELECT TABLE_NAME, REPLICA_COUNT, AVAILABLE
-FROM   information_schema.tiflash_replica
-WHERE  TABLE_SCHEMA = 'store_alpha';
-
--- Verificar routing a TiFlash (buscar cop[tiflash] en el output)
-EXPLAIN
-  SELECT g.genre, COUNT(*) AS units
-  FROM   order_items oi JOIN games g ON oi.game_id = g.game_id
-  GROUP BY g.genre;
-```
-
----
-
-### 5.3 Módulo 2: Cross-Schema Plan Binding
-
-```sql
--- Crear binding global para query analítica común a todos los tenants
-CREATE GLOBAL BINDING FOR
-  SELECT g.genre, COUNT(*) FROM order_items oi
-  JOIN games g ON oi.game_id = g.game_id GROUP BY g.genre
-USING
-  SELECT /*+ HASH_AGG() USE_INDEX(oi, idx_game_id) */ g.genre, COUNT(*)
-  FROM   order_items oi JOIN games g ON oi.game_id = g.game_id
-  GROUP BY g.genre;
-
--- Verificar bindings activos
-SHOW GLOBAL BINDINGS;
-```
-
----
-
-### 5.4 Módulo 4: Online Schema Change
-
-```sql
--- Agregar columna sin downtime mientras hay escrituras activas en otro tenant
-ALTER TABLE store_alpha.orders ADD COLUMN discount_pct DECIMAL(5,2) DEFAULT 0.00;
-
--- Verificar que la columna existe y tiene el valor default
-DESCRIBE store_alpha.orders;
-```
-
----
-
-### 5.5 RBAC — Verificación de Aislamiento
-
-```sql
--- Crear usuario scoped al schema del tenant (reemplazar {prefix})
-CREATE USER '{prefix}.user_store_alpha'@'%' IDENTIFIED BY 'SecurePass123!';
-GRANT SELECT, INSERT, UPDATE ON store_alpha.* TO '{prefix}.user_store_alpha'@'%';
-
--- Verificación (conectado como user_store_alpha):
-SHOW DATABASES;                    -- Solo debe mostrar store_alpha
-SELECT * FROM store_beta.orders;   -- Debe dar ACCESS DENIED ✅
-```
-
----
-
-### 5.6 SQL Views para Quick BI
-
-```sql
--- Ventas por género
-CREATE VIEW store_alpha.sales_by_genre AS
-  SELECT g.genre,
-         COUNT(oi.item_id)                 AS units_sold,
-         SUM(oi.unit_price * oi.quantity)  AS revenue
-  FROM   order_items oi JOIN games g ON oi.game_id = g.game_id
-  GROUP BY g.genre;
-
--- Top títulos de la semana
-CREATE VIEW store_alpha.top_titles_this_week AS
-  SELECT g.title, g.genre, COUNT(*) AS purchases
-  FROM   orders o
-  JOIN   order_items oi ON o.order_id = oi.order_id
-  JOIN   games g ON oi.game_id = g.game_id
-  WHERE  o.ordered_at >= NOW() - INTERVAL 7 DAY
-  GROUP BY g.title, g.genre
-  ORDER BY purchases DESC LIMIT 10;
-
--- Revenue diario
-CREATE VIEW store_alpha.daily_revenue AS
-  SELECT DATE(ordered_at) AS sale_date, SUM(total_amount) AS revenue
-  FROM   orders
-  GROUP BY DATE(ordered_at)
-  ORDER BY sale_date;
-```
-
----
-
-## 6. Cronograma de 6 Horas
-
-> I1 = Arquitecto · I2 = Backend · I3 = Data Engineer
-
-| Tiempo | Fase | Tareas Paralelas | Dependencias |
-|--------|------|-----------------|--------------|
-| 0:00–0:30 | Setup inicial | I1: VPC, ECS, Security Group. I3: conectar TiDB Cloud. | I2: clonar repo, instalar deps |
-| 0:30–1:30 | Provisioning & Schema | I3: script provisioning 5 tenants, RBAC, TiFlash. I2: endpoints base + connection pool. | I1: configurar Elastic IP + env vars |
-| 1:30–2:30 | Backend + AI | I2: endpoint recommend + integración Qwen. I3: SQL Views. | I1: verificar conectividad end-to-end |
-| 2:30–3:30 | Analytics & Módulos | I3: Quick BI datasource + 3 charts. I2: seed data script. | I1: Plan Binding + script Online DDL |
-| 3:30–4:30 | Testing & Ajustes | TODOS: probar flujo completo, verificar EXPLAIN TiFlash, aislamiento Quick BI. | Corregir errores críticos |
-| 4:30–5:30 | Ensayo del Demo | I1 lidera ensayo del script de 5 min. I2 y I3 ejecutan sus partes. | Comandos curl y SQL listos en terminal |
-| 5:30–6:00 | Buffer + Demo | Demo en vivo ante jueces. Responder Q&A. | — |
-
----
-
-## 7. Rúbrica de Evaluación
-
-| Criterio | Pts | Obligatorio | Qué evalúan los jueces |
-|----------|-----|-------------|------------------------|
-| **[M1] Provisioning + Aislamiento** | 30 | ✅ SÍ | 5 schemas + script <60s + RBAC ACCESS DENIED cross-tenant |
-| **[M3] TiFlash HTAP Verificado** | 30 | ✅ SÍ | TiFlash habilitado + `cop[tiflash]` en EXPLAIN + explicar beneficio HTAP |
-| [M2] Cross-Schema Plan Binding | 20 | NO | GLOBAL BINDING creado, mismo plan reusado en todos los tenants |
-| [M4] Online Schema Change | 20 | NO | ADD COLUMN sin downtime confirmado con write stream activo |
-| Calidad AI (Qwen) | 15 | NO | Respuesta coherente, JSON parseado correctamente, guardado en TiDB |
-| Dashboard Quick BI | 10 | NO | 3 charts vivos + aislamiento visual verificado ante jueces |
-| Write API Correctness | 10 | NO | POST escribe al tenant correcto, `4xx` en tenant inválido |
-| Calidad de Código | 10 | NO | Sin credenciales hardcoded, connection pool, seed data, explicación de escalabilidad |
-
-> ⚠️ **Los criterios marcados como Obligatorio son binarios** — si no se demuestran, el puntaje máximo es **60 puntos** independientemente de todo lo demás.
-
-### Puntos Extra (Stretch Goals)
-
-- **Tier 1:** AUTO_RANDOM comparison + EXPLAIN ANALYZE RU cost + TiFlash vs TiKV benchmark
-- **Tier 2:** Embeddings Qwen + Vector Search en TiDB (`VECTOR` column + `VEC_COSINE_DISTANCE`)
-- **Tier 3:** TiDB Cloud Branching — schema migration en branch, sandbox de agente, 20 tenants en un run
-
----
-
-## 8. Script del Demo (5 Minutos)
-
-> Cada integrante debe tener sus comandos listos en terminal. **NO improvisar.**
-
-| Tiempo | Fase | Qué hace el equipo | Comandos / Evidencia |
-|--------|------|--------------------|----------------------|
-| 0:00–0:30 | Arquitectura | I1 presenta slide de arquitectura. Explica los 4 módulos TiDB. | 1 diapositiva con capas visibles |
-| 0:30–1:15 | Aislamiento [M1+M3] | I3 conecta como `user_store_alpha`. `SHOW DATABASES`. Intenta `SELECT` en `store_beta`. | `SHOW DATABASES;` → `SELECT * FROM store_beta.orders;` → ACCESS DENIED |
-| 1:15–2:00 | Write + AI | I2 ejecuta POST purchase, luego GET recommend. Muestra JSON de Qwen con reasoning. | `curl -X POST /api/store_alpha/purchase ...` → `curl GET /api/store_alpha/recommend/1` |
-| 2:00–2:45 | Provisioning [M1] | I3 ejecuta script en vivo para `store_zeta`. Cronometrar <60s. | `python provision.py store_zeta` → DB, tables, user, views created in Xs |
-| 2:45–3:15 | Online DDL [M4] | I2 lanza write stream en background. I3 ejecuta ALTER TABLE. Sin errores. | Loop POST background + `ALTER TABLE store_alpha.orders ADD COLUMN discount_pct ...` |
-| 3:15–4:00 | Quick BI + Plan Binding | I3 abre dashboard, 3 charts vivos. Muestra `EXPLAIN` con `cop[tiflash]`. `GLOBAL BINDING` activo. | `EXPLAIN SELECT genre ...` → `cop[tiflash]` · `SHOW GLOBAL BINDINGS` |
-| 4:00–5:00 | Q&A | Responder preguntas de los jueces con confianza. | Ver tabla Q&A en sección 4.4 |
-
-### Checklist Pre-Demo (30 min antes)
-
-- [ ] Terminal abierta con `user_store_alpha` autenticado en TiDB
-- [ ] Curl commands copiados y listos en un `.txt` (purchase + recommend)
-- [ ] Script `provision.py` testeado — `store_zeta` **NO** debe existir todavía
-- [ ] Write stream script (loop POST) testeado y listo para ejecutar
-- [ ] Dashboard Quick BI abierto en browser con datos frescos
-- [ ] EXPLAIN output pre-verificado mostrando `cop[tiflash]`
-- [ ] `SHOW GLOBAL BINDINGS` con al menos 1 binding activo
-- [ ] Slide de arquitectura en pantalla completa lista
-
----
-
-## 9. Configuración del Entorno
-
-### 9.1 Variables de Entorno en ECS
+## Live Demo Script (5 min pitch)
 
 ```bash
-# /etc/environment o .env — NUNCA hardcodear en el código
-TIDB_HOST=<gateway-tidb-cloud-host>
-TIDB_PORT=4000
-TIDB_USER_STORE_ALPHA={prefix}.user_store_alpha
-TIDB_PASS_STORE_ALPHA=<password>
-TIDB_USER_STORE_BETA={prefix}.user_store_beta
-TIDB_PASS_STORE_BETA=<password>
-DASHSCOPE_API_KEY=sk-xxxxxxxxxxxxxxxxxxxx
+# Step 1: Launch agent for Tenant A
+curl -X POST http://localhost:8000/api/v1/agents/launch \
+  -H "X-Tenant-ID: enterprise-A" \
+  -H "Authorization: Bearer {JWT_A}" \
+  -d '{"agent_type":"research","task_plan":{"steps":["search","analyze","report"]}}'
+
+# Step 2: Simulate tool calls (agent working)
+curl -X POST http://localhost:8000/api/v1/agents/{id}/tools/call \
+  -H "X-Tenant-ID: enterprise-A" \
+  -d '{"tool_name":"web_search","input_params":{"query":"TiDB architecture"}}'
+
+# Step 3: PROVE ISOLATION — Tenant B cannot see Tenant A's session
+curl http://localhost:8000/api/v1/agents/{session_id_A}/state \
+  -H "X-Tenant-ID: enterprise-B"
+# → 404 Not Found ← ISOLATION PROVEN
+
+# Step 4: Run Qwen Meta-Agent
+curl http://localhost:8000/api/v1/meta-agent/report \
+  -H "X-Tenant-ID: enterprise-A"
+# → Returns: failure_patterns, tool_optimizations, efficiency_score
+
+# Step 5: Show TiFlash vs TiKV speed
+# Run analytical query on TiFlash: ~12ms
+# Same query on TiKV: ~890ms  ← HTAP value proven
 ```
-
-### 9.2 Instalación de Dependencias (ECS Ubuntu 22.04)
-
-```bash
-sudo apt update && sudo apt install -y python3.11 python3-pip
-pip3 install fastapi uvicorn openai pymysql python-dotenv
-
-# Levantar servidor
-uvicorn main:app --host 0.0.0.0 --port 80 --workers 2
-```
-
-### 9.3 Verificaciones de Conectividad
-
-```bash
-# Test TiDB desde ECS
-mysql -h $TIDB_HOST -P 4000 -u admin -p -e 'SELECT version();'
-
-# Test Qwen API desde ECS
-curl -X POST https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions \
-  -H "Authorization: Bearer $DASHSCOPE_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"model":"qwen-plus","messages":[{"role":"user","content":"ping"}]}'
-```
-
-### 9.4 Errores Comunes y Soluciones
-
-| Error | Causa | Solución |
-|-------|-------|----------|
-| `Connection refused port 4000` | IP de ECS no en allowlist TiDB | TiDB Cloud → Security → IP Access List → agregar IP ECS |
-| `User name must start with...` | Falta prefijo de cluster en username | Verificar prefijo en TiDB Cloud console. Formato: `{prefix}.user_xxx` |
-| Qwen devuelve texto libre, no JSON | System prompt no especifica JSON estrictamente | Agregar: `"Respond ONLY with valid JSON. No other text."` |
-| `Quick BI connection refused` | IPs Quick BI no en allowlist | Agregar IPs egress de Quick BI a TiDB Cloud IP Access List |
-| EXPLAIN muestra `cop[tikv]` en vez de `cop[tiflash]` | Réplica no lista (`AVAILABLE=0`) | Esperar 2–5 min. Verificar: `SELECT TABLE_NAME, AVAILABLE FROM information_schema.tiflash_replica` |
-| ACCESS DENIED al consultar `store_beta` | — | ✅ **Esto ES la demostración de aislamiento. No es un error.** |
 
 ---
 
-*Documento generado para Hackathon — GameVault Corp · Multi-Tenant SaaS con Alibaba Cloud + TiDB + Qwen AI*
+## Why TiDB is the Right Choice
+
+| Challenge | Without TiDB | With TiDB |
+|-----------|-------------|-----------|
+| Agent state persistence | Redis (volatile) + Postgres (separate) | Single HTAP cluster |
+| Analytical queries on live data | ETL pipeline needed (hours) | TiFlash replica (instant) |
+| 50 concurrent agents writing | Lock contention, degraded perf | Optimistic concurrency, isolated |
+| Cross-tenant isolation | App-layer only, error-prone | Partition + app layer, bulletproof |
+| Scale from 10 → 10K tenants | Reshard pain | Online DDL, no downtime |
+
+---
+
+## Judging Criteria Alignment
+
+| Criterion | AgentNexus Answer |
+|-----------|-------------------|
+| **Innovation** | Database as agent memory — TiDB as cognitive backbone, not just storage |
+| **Technical Depth** | HTAP (TiKV+TiFlash), tenant partitioning, Qwen meta-agent loop |
+| **Alibaba Cloud Integration** | API Gateway + PAI-EAS + RAM + RocketMQ + OSS |
+| **TiDB Usage** | Placement rules, TiFlash replicas, HTAP workload separation |
+| **Real-World Applicability** | Solves exact X×Y×Z problem Alibaba faced in production |
+| **Demo Quality** | Proven isolation + Qwen output + TiFlash speed comparison |
+
+---
+
+*AgentNexus — "The database is not just storage. It's the agent's mind."*
+*Built in 60 minutes | Alibaba Cloud × TiDB × Qwen*
