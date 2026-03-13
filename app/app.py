@@ -13,6 +13,7 @@ from fastapi import FastAPI
 from app.lifespan import lifespan
 from app.middleware import tenant_middleware
 from app.routes.agents import router as agents_router
+from app.routes.auth import router as auth_router
 from app.routes.health import router as health_router
 from app.routes.meta_agent import router as meta_agent_router
 
@@ -34,3 +35,4 @@ app.middleware("http")(tenant_middleware)
 app.include_router(health_router)
 app.include_router(agents_router)
 app.include_router(meta_agent_router)
+app.include_router(auth_router)

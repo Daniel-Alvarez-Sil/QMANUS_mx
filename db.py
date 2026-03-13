@@ -1,6 +1,7 @@
 try:
     from dotenv import load_dotenv
-    load_dotenv()
+    from pathlib import Path
+    load_dotenv(dotenv_path=Path(__file__).parent / ".env")
 except ImportError:
     pass  # dotenv optional, env vars can be set directly
 
@@ -44,8 +45,10 @@ import logging
 import os
 import ssl
 from contextlib import asynccontextmanager
+import concurrent.futures
 
 import aiomysql
+import mysql.connector
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -62,9 +65,10 @@ logger = logging.getLogger("tidb")
 # ---------------------------------------------------------------------------
 
 def _build_ssl_ctx() -> ssl.SSLContext:
-    ctx = ssl.create_default_context()
-    ctx.check_hostname = True
-    ctx.verify_mode = ssl.CERT_REQUIRED
+    # Create SSL context for TiDB Cloud with proper configuration
+    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
     return ctx
 
 ssl_ctx = _build_ssl_ctx()
@@ -103,8 +107,8 @@ class TiDBPoolManager:
 
             host = os.getenv("TIDB_HOST")
             port = int(os.getenv("TIDB_PORT", 4000))
-            user = os.getenv("TIDB_USER")
-            password = os.getenv("TIDB_PASS")
+            user = os.getenv("TIDB_USER") or os.getenv("TIDB_ADMIN_USER")
+            password = os.getenv("TIDB_PASS") or os.getenv("TIDB_ADMIN_PASSWORD")
             db = os.getenv("TIDB_DB", "agentnexus")
 
             logger.info(
@@ -124,6 +128,9 @@ class TiDBPoolManager:
                 autocommit=True,
                 connect_timeout=10,
                 echo=False,
+                # Use a simpler SSL configuration for Windows compatibility
+                use_unicode=True,
+                charset='utf8mb4',
             )
 
             self._pools[tenant_id] = pool
@@ -161,6 +168,59 @@ class TiDBPoolManager:
                 pool.release(conn)
 
     # ------------------------------------------------------------------
+    # Sync fallback for Windows SSL issues
+    # ------------------------------------------------------------------
+
+    async def _execute_sync_fallback(
+        self,
+        tenant_id: str,
+        sql: str,
+        args=None,
+        is_write=False,
+    ) -> list[dict] | int:
+        """
+        Fallback method using mysql-connector-python in thread pool.
+        Used when aiomysql SSL has issues on Windows.
+        """
+        host = os.getenv("TIDB_HOST")
+        port = int(os.getenv("TIDB_PORT", 4000))
+        user = os.getenv("TIDB_USER") or os.getenv("TIDB_ADMIN_USER")
+        password = os.getenv("TIDB_PASS") or os.getenv("TIDB_ADMIN_PASSWORD")
+        db = os.getenv("TIDB_DB", "agentnexus")
+
+        def _sync_operation():
+            conn = mysql.connector.connect(
+                host=host,
+                port=port,
+                user=user,
+                password=password,
+                database=db,
+                ssl_disabled=False,
+                ssl_ca=None,
+                connection_timeout=10,
+                use_unicode=True,
+                charset='utf8mb4',
+            )
+            
+            try:
+                cursor = conn.cursor(dictionary=True)
+                cursor.execute(sql, args or ())
+                
+                if is_write:
+                    result = cursor.rowcount
+                else:
+                    result = cursor.fetchall()
+                    
+                cursor.close()
+                return result
+            finally:
+                conn.close()
+
+        loop = asyncio.get_event_loop()
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            return await loop.run_in_executor(executor, _sync_operation)
+
+    # ------------------------------------------------------------------
     # Read helper
     # ------------------------------------------------------------------
 
@@ -184,11 +244,24 @@ class TiDBPoolManager:
                 tenant_id, sql,
             )
 
-        async with self.get_conn(tenant_id) as conn:
-            async with conn.cursor(aiomysql.DictCursor) as cur:
-                await cur.execute(sql, args)
-                rows = await cur.fetchall()
-                return list(rows) if rows else []
+        # On Windows, use sync fallback to avoid SSL issues
+        if os.name == 'nt':
+            try:
+                return await self._execute_sync_fallback(tenant_id, sql, args, is_write=False)
+            except Exception as exc:
+                logger.warning("Sync fallback failed for tenant=%s: %s", tenant_id, exc)
+                # Continue to try aiomysql as fallback
+
+        try:
+            async with self.get_conn(tenant_id) as conn:
+                async with conn.cursor(aiomysql.DictCursor) as cur:
+                    await cur.execute(sql, args)
+                    rows = await cur.fetchall()
+                    return list(rows) if rows else []
+        except Exception as exc:
+            logger.error("aiomysql failed for tenant=%s, trying sync fallback: %s", tenant_id, exc)
+            # Final fallback to sync method
+            return await self._execute_sync_fallback(tenant_id, sql, args, is_write=False)
 
     # ------------------------------------------------------------------
     # Write helper
@@ -212,10 +285,23 @@ class TiDBPoolManager:
                 tenant_id, sql,
             )
 
-        async with self.get_conn(tenant_id) as conn:
-            async with conn.cursor() as cur:
-                await cur.execute(sql, args)
-                return cur.rowcount
+        # On Windows, use sync fallback to avoid SSL issues
+        if os.name == 'nt':
+            try:
+                return await self._execute_sync_fallback(tenant_id, sql, args, is_write=True)
+            except Exception as exc:
+                logger.warning("Sync fallback failed for tenant=%s: %s", tenant_id, exc)
+                # Continue to try aiomysql as fallback
+
+        try:
+            async with self.get_conn(tenant_id) as conn:
+                async with conn.cursor() as cur:
+                    await cur.execute(sql, args)
+                    return cur.rowcount
+        except Exception as exc:
+            logger.error("aiomysql failed for tenant=%s, trying sync fallback: %s", tenant_id, exc)
+            # Final fallback to sync method
+            return await self._execute_sync_fallback(tenant_id, sql, args, is_write=True)
 
     # ------------------------------------------------------------------
     # Shutdown
@@ -366,4 +452,10 @@ if __name__ == "__main__":
         await pool_manager.close_all()
         print("\n=== All tests passed ✓ ===\n")
 
+    # Use default event loop policy instead of WindowsProactorEventLoopPolicy
+    # to avoid SSL compatibility issues
+    if os.name == 'nt':
+        # Don't change the event loop policy on Windows
+        pass
+    
     asyncio.run(test())

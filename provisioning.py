@@ -7,10 +7,14 @@ from dotenv import load_dotenv
 
 from db import pool_manager
 
-load_dotenv()
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 
-# Cluster prefix: explicit env var takes priority, otherwise derived from TIDB_USER
-CLUSTER_PREFIX = os.getenv("TIDB_CLUSTER_PREFIX") or os.getenv("TIDB_USER", "").split(".")[0]
+# Cluster prefix: explicit env var takes priority, otherwise derived from TIDB_ADMIN_USER/TIDB_USER
+CLUSTER_PREFIX = (
+    os.getenv("TIDB_CLUSTER_PREFIX")
+    or os.getenv("TIDB_USER", "").split(".")[0]
+    or os.getenv("TIDB_ADMIN_USER", "").split(".")[0]
+)
 
 
 async def create_database(tenant_name: str) -> None:

@@ -23,7 +23,12 @@ from app.config import JWT_SECRET
 from app.context import ctx_tenant
 
 # Paths that bypass authentication entirely
-_EXEMPT_PATHS = frozenset({"/", "/health", "/docs", "/redoc", "/openapi.json"})
+_EXEMPT_PATHS = frozenset({
+    "/", "/health", "/docs", "/redoc", "/openapi.json",
+    "/api/v1/auth/token",
+    # Allow token creation without an existing tenant-bound JWT.
+    # Token endpoint will still validate provided tenant id.
+})
 
 _MISMATCH = JSONResponse(
     status_code=401,
