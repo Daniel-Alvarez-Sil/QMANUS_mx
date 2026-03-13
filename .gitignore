@@ -1,0 +1,4 @@
+# All venv folders
+venv/**/*
+venv/
+*.pem
