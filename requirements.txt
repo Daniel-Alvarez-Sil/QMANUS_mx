@@ -1,0 +1,24 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# AgentNexus — Python dependencies
+# Pin minor versions; run `pip-compile requirements.txt` before each release.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── FastAPI application (app/ package + main.py) ─────────────────────────────
+fastapi==0.115.12              # Web framework
+uvicorn[standard]==0.34.0      # ASGI server (websockets + httptools included)
+pydantic==2.11.1               # Request / response validation
+
+# ── TiDB / MySQL drivers ─────────────────────────────────────────────────────
+aiomysql==0.2.0                # Async driver  — db.py, app/ FastAPI routes
+
+# ── Cryptography (required by aiomysql SSL + python-jose) ────────────────────
+cryptography==42.0.5              # TLS/SSL support for aiomysql TiDB Cloud
+
+# ── Auth ─────────────────────────────────────────────────────────────────────
+python-jose[cryptography]==3.3.0  # HS256 JWT encode / decode
+
+# ── HTTP client ──────────────────────────────────────────────────────────────
+httpx==0.28.1                  # Async + sync HTTP — Qwen API calls
+
+# ── Environment ──────────────────────────────────────────────────────────────
+python-dotenv==1.1.0           # .env loading — database.py, provisioning.py
