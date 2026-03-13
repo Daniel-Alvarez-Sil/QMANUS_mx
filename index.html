@@ -1,0 +1,1633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgentNexus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-primary: #141414;
+    --bg-secondary: #1c1c1c;
+    --bg-elevated: #242424;
+    --bg-hover: #2a2a2a;
+    --border: #2f2f2f;
+    --text-primary: #ffffff;
+    --text-secondary: #8a8a8a;
+    --text-muted: #555555;
+    --accent-purple: #7c3aed;
+    --accent-green: #22c55e;
+    --accent-blue: #3b82f6;
+    --accent-yellow: #eab308;
+    --accent-red: #ef4444;
+    --sidebar-width: 280px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    display: flex;
+    height: 100vh;
+  }
+
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #333; border-radius: 9999px; }
+
+  /* ══ SIDEBAR ══ */
+  #sidebar {
+    width: var(--sidebar-width);
+    min-width: var(--sidebar-width);
+    background: #111111;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: width 0.25s ease, min-width 0.25s ease;
+    border-right: 1px solid var(--border);
+    position: relative;
+    z-index: 10;
+  }
+  #sidebar.collapsed { width: 0; min-width: 0; }
+  .sidebar-inner {
+    width: var(--sidebar-width);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+  }
+  .sidebar-logo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 16px 16px 20px;
+    flex-shrink: 0;
+  }
+  .logo-left { display: flex; align-items: center; gap: 8px; }
+  .logo-icon {
+    width: 28px; height: 28px;
+    background: var(--accent-purple);
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .logo-icon svg { width: 16px; height: 16px; fill: white; }
+  .logo-text { font-size: 17px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.3px; }
+  .collapse-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--text-muted); padding: 4px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s ease;
+  }
+  .collapse-btn:hover { background: var(--bg-hover); color: var(--text-secondary); }
+
+  .sidebar-nav { padding: 4px 10px; flex-shrink: 0; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 0 12px; height: 40px; border-radius: 8px;
+    cursor: pointer; font-size: 14px; font-weight: 500;
+    color: var(--text-secondary);
+    transition: all 0.15s ease;
+    user-select: none; white-space: nowrap; position: relative;
+  }
+  .nav-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+  .nav-item.active { background: #1e1e1e; color: var(--text-primary); }
+  .nav-icon { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+  .nav-badge {
+    margin-left: auto;
+    background: var(--accent-purple); color: white;
+    font-size: 10px; font-weight: 600;
+    padding: 2px 7px; border-radius: 9999px; letter-spacing: 0.2px;
+  }
+
+  .sidebar-section { padding: 16px 10px 4px; flex-shrink: 0; }
+  .section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 12px; margin-bottom: 2px;
+  }
+  .section-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.7px; }
+  .section-action {
+    background: none; border: none; cursor: pointer;
+    color: var(--text-muted); display: flex; align-items: center;
+    padding: 2px; border-radius: 4px; transition: all 0.15s ease;
+  }
+  .section-action:hover { color: var(--text-secondary); background: var(--bg-hover); }
+
+  .tasks-empty {
+    margin: 8px 10px;
+    border: 1.5px dashed var(--border); border-radius: 12px;
+    padding: 20px 16px;
+    display: flex; align-items: center; justify-content: center;
+    flex: 1; min-height: 0;
+    overflow-y: auto;
+  }
+  .tasks-empty-text { font-size: 12px; color: var(--text-muted); text-align: center; line-height: 1.5; }
+  .tasks-section { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
+
+  /* Sidebar task items */
+  .sidebar-task-list { padding: 4px 10px; overflow-y: auto; flex: 1; }
+  .sidebar-task-item {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 8px 12px; border-radius: 8px; cursor: pointer;
+    transition: all 0.15s ease; margin-bottom: 2px;
+  }
+  .sidebar-task-item:hover { background: var(--bg-hover); }
+  .sidebar-task-item.selected { background: #1e1e1e; }
+  .task-item-dot {
+    width: 7px; height: 7px; border-radius: 9999px;
+    margin-top: 5px; flex-shrink: 0;
+  }
+  .task-item-text { font-size: 12px; color: var(--text-secondary); line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 170px; }
+  .task-item-type { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+
+  .sidebar-invite {
+    margin: 8px 10px;
+    background: #1a1a1a; border: 1px solid var(--border); border-radius: 12px;
+    padding: 12px 14px;
+    display: flex; align-items: center; gap: 12px;
+    cursor: pointer; transition: all 0.15s ease; flex-shrink: 0;
+  }
+  .sidebar-invite:hover { background: #1e1e1e; }
+  .invite-avatar {
+    width: 34px; height: 34px;
+    background: linear-gradient(135deg, #7c3aed, #a855f7);
+    border-radius: 9999px; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: 14px;
+  }
+  .invite-text { flex: 1; min-width: 0; }
+  .invite-title { font-size: 13px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .invite-subtitle { font-size: 11px; color: var(--text-secondary); margin-top: 1px; }
+  .invite-chevron { color: var(--text-muted); flex-shrink: 0; }
+
+  .sidebar-bottom-icons { display: flex; align-items: center; gap: 2px; padding: 10px 14px 16px; flex-shrink: 0; }
+  .bottom-icon-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--text-muted); width: 34px; height: 34px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s ease; font-size: 15px;
+  }
+  .bottom-icon-btn:hover { background: var(--bg-hover); color: var(--text-secondary); }
+
+  /* ══ MAIN CONTENT ══ */
+  #main { flex: 1; display: flex; flex-direction: column; overflow: hidden; transition: all 0.25s ease; position: relative; }
+
+  .topbar {
+    display: flex; align-items: center;
+    padding: 16px 28px; gap: 10px; flex-shrink: 0;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 8px; flex: 1; }
+  .topbar-right { display: flex; align-items: center; gap: 10px; }
+
+  /* Health indicator */
+  .health-indicator {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; font-weight: 500; color: var(--text-muted);
+    padding: 4px 10px; border-radius: 9999px;
+    border: 1px solid var(--border);
+    cursor: default; user-select: none;
+  }
+  .health-dot {
+    width: 6px; height: 6px; border-radius: 9999px;
+    background: var(--text-muted); flex-shrink: 0;
+    transition: background 0.3s ease;
+  }
+  .health-dot.ok { background: var(--accent-green); }
+  .health-dot.degraded { background: var(--accent-red); }
+  .health-dot.checking { background: var(--accent-yellow); animation: pulse-dot 1s ease infinite; }
+  @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .topbar-free {
+    background: none; border: 1px solid var(--border); color: var(--text-secondary);
+    font-size: 13px; font-weight: 500; padding: 6px 14px; border-radius: 9999px;
+    cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s ease;
+  }
+  .topbar-free:hover { border-color: var(--text-muted); color: var(--text-primary); }
+
+  .topbar-trial {
+    background: var(--text-primary); border: none; color: #141414;
+    font-size: 13px; font-weight: 600; padding: 6px 16px; border-radius: 9999px;
+    cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s ease;
+  }
+  .topbar-trial:hover { background: #e5e5e5; }
+
+  .topbar-config {
+    background: none; border: 1px solid var(--border); color: var(--text-muted);
+    font-size: 12px; font-weight: 500; padding: 6px 12px; border-radius: 9999px;
+    cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s ease;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .topbar-config:hover { border-color: var(--text-muted); color: var(--text-secondary); }
+
+  .hero {
+    display: flex; flex-direction: column; align-items: center;
+    padding-top: 48px;
+    flex: 1; overflow-y: auto; overflow-x: hidden;
+  }
+  .hero-inner {
+    width: 100%; max-width: 700px;
+    padding: 0 24px 40px;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .hero-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 42px; font-weight: 400; color: var(--text-primary);
+    text-align: center; margin-bottom: 32px;
+    line-height: 1.15; letter-spacing: -0.5px;
+  }
+
+  /* Input box */
+  .input-box {
+    width: 100%; background: var(--bg-hover); border: 1px solid var(--border);
+    border-radius: 16px; padding: 18px 18px 12px;
+    transition: border-color 0.15s ease; cursor: text;
+  }
+  .input-box:focus-within { border-color: rgba(255,255,255,0.25); box-shadow: 0 0 0 1px rgba(255,255,255,0.08); }
+  .input-field {
+    width: 100%; background: none; border: none; outline: none;
+    font-family: 'Inter', sans-serif; font-size: 15px; color: var(--text-primary);
+    resize: none; min-height: 24px; line-height: 1.5; caret-color: var(--text-primary);
+  }
+  .input-field::placeholder { color: var(--text-muted); }
+
+  /* Agent type selector */
+  .agent-type-row {
+    display: flex; align-items: center; gap: 6px;
+    margin: 10px 0 0; padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+  .agent-type-label { font-size: 11px; color: var(--text-muted); white-space: nowrap; margin-right: 2px; }
+  .agent-type-pill {
+    background: none; border: 1px solid var(--border); color: var(--text-muted);
+    font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 500;
+    padding: 3px 10px; border-radius: 9999px; cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .agent-type-pill:hover { border-color: var(--text-muted); color: var(--text-secondary); }
+  .agent-type-pill.selected { background: var(--accent-purple); border-color: var(--accent-purple); color: white; }
+
+  .input-bottom { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
+  .input-left-icons, .input-right-icons { display: flex; align-items: center; gap: 4px; }
+  .input-icon-btn {
+    background: none; border: none; cursor: pointer; color: var(--text-muted);
+    width: 32px; height: 32px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s ease; font-size: 16px;
+  }
+  .input-icon-btn:hover { background: #333; color: var(--text-secondary); }
+  .input-avatar { width: 30px; height: 30px; background: linear-gradient(135deg, #7c3aed, #a855f7); border-radius: 9999px; cursor: pointer; flex-shrink: 0; }
+
+  /* Submit button */
+  .submit-btn {
+    background: var(--text-primary); border: none; color: #141414;
+    font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600;
+    padding: 6px 14px; border-radius: 9999px; cursor: pointer;
+    transition: all 0.15s ease; display: flex; align-items: center; gap: 5px;
+    white-space: nowrap;
+  }
+  .submit-btn:hover { background: #e5e5e5; }
+  .submit-btn:disabled { background: #333; color: var(--text-muted); cursor: not-allowed; }
+  .submit-btn .spinner-sm { width: 10px; height: 10px; border: 1.5px solid rgba(0,0,0,0.2); border-top-color: #141414; border-radius: 50%; animation: spin 0.7s linear infinite; }
+
+  /* Connect tools row */
+  .connect-tools {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 10px; padding: 0 4px;
+    font-size: 12px; color: var(--text-muted);
+  }
+  .connect-tools-link { display: flex; align-items: center; gap: 6px; cursor: pointer; transition: color 0.15s ease; }
+  .connect-tools-link:hover { color: var(--text-secondary); }
+  .tool-dots { display: flex; gap: 4px; margin-left: 4px; }
+  .tool-dot {
+    width: 16px; height: 16px; border-radius: 9999px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 700; color: white; flex-shrink: 0;
+  }
+  .connect-close {
+    margin-left: auto; background: none; border: none; cursor: pointer;
+    color: var(--text-muted); font-size: 14px; padding: 2px 4px; border-radius: 4px;
+    transition: all 0.15s ease; line-height: 1;
+  }
+  .connect-close:hover { color: var(--text-secondary); background: var(--bg-hover); }
+
+  /* Pills row */
+  .pills-row { display: flex; align-items: center; gap: 10px; margin-top: 16px; flex-wrap: wrap; justify-content: center; }
+  .pill {
+    background: var(--bg-hover); border: 1px solid var(--border); color: var(--text-secondary);
+    font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500;
+    padding: 0 16px; height: 36px; border-radius: 9999px; cursor: pointer;
+    display: flex; align-items: center; gap: 7px; transition: all 0.15s ease; white-space: nowrap;
+  }
+  .pill:hover { background: #333; color: var(--text-primary); border-color: #3a3a3a; }
+
+  /* Feature card */
+  .feature-card-wrap { width: 100%; max-width: 600px; margin-top: 28px; }
+  .feature-card {
+    background: #1f1f1f; border: 1px solid var(--border); border-radius: 16px;
+    padding: 24px; display: flex; align-items: center; gap: 24px; min-height: 100px;
+  }
+  .feature-card-left { flex: 1; min-width: 0; }
+  .feature-card-title { font-size: 17px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; }
+  .feature-card-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.55; }
+  .feature-card-right { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; width: 130px; }
+  .skill-bar { display: flex; align-items: center; gap: 8px; }
+  .skill-dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+  .skill-line { height: 8px; background: var(--border); border-radius: 9999px; flex: 1; }
+  .agent-row { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted); }
+  .agent-status-dot { width: 7px; height: 7px; border-radius: 9999px; flex-shrink: 0; }
+  .agent-row-line { height: 7px; background: var(--border); border-radius: 9999px; flex: 1; }
+  .card-dots { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 16px; }
+  .card-dot { width: 7px; height: 7px; border-radius: 9999px; background: var(--border); cursor: pointer; transition: all 0.15s ease; border: none; }
+  .card-dot.active { background: var(--text-muted); width: 20px; }
+  .card-dot:hover:not(.active) { background: #444; }
+
+  /* ══ SESSION PANEL ══ */
+  .session-panel {
+    width: 100%; max-width: 700px;
+    background: #1a1a1a; border: 1px solid var(--border); border-radius: 16px;
+    margin-top: 20px; overflow: hidden;
+    animation: slide-in 0.25s ease;
+  }
+  @keyframes slide-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  .session-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 18px; border-bottom: 1px solid var(--border);
+  }
+  .session-header-left { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+  .session-icon { font-size: 14px; }
+  .session-title { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+  .session-id-tag {
+    font-size: 10px; font-weight: 500; color: var(--text-muted);
+    background: var(--bg-elevated); padding: 2px 8px; border-radius: 9999px;
+    font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;
+  }
+  .status-badge {
+    font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 9999px;
+    text-transform: uppercase; letter-spacing: 0.3px; flex-shrink: 0;
+  }
+  .status-badge.planning { background: rgba(234,179,8,0.15); color: var(--accent-yellow); }
+  .status-badge.running  { background: rgba(34,197,94,0.15);  color: var(--accent-green); }
+  .status-badge.done     { background: rgba(59,130,246,0.15); color: var(--accent-blue); }
+  .status-badge.error    { background: rgba(239,68,68,0.15);  color: var(--accent-red); }
+
+  .session-header-actions { display: flex; align-items: center; gap: 6px; }
+  .icon-btn-sm {
+    background: none; border: none; cursor: pointer; color: var(--text-muted);
+    width: 28px; height: 28px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s ease;
+  }
+  .icon-btn-sm:hover { background: var(--bg-hover); color: var(--text-secondary); }
+
+  .session-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 16px; }
+
+  /* Tool history */
+  .section-title-sm { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 8px; }
+  .tool-history-list { display: flex; flex-direction: column; gap: 6px; }
+  .tool-call-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px; background: var(--bg-elevated); border-radius: 8px;
+    font-size: 12px;
+  }
+  .tool-call-name { color: var(--text-primary); font-weight: 500; flex-shrink: 0; }
+  .tool-call-status-dot { width: 6px; height: 6px; border-radius: 9999px; flex-shrink: 0; }
+  .tool-call-latency { color: var(--text-muted); margin-left: auto; white-space: nowrap; }
+  .tool-call-time { color: var(--text-muted); font-size: 10px; }
+  .tool-call-id { font-family: monospace; font-size: 10px; color: var(--text-muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tool-history-empty { font-size: 12px; color: var(--text-muted); text-align: center; padding: 12px 0; }
+
+  /* Tool call form */
+  .tool-call-form { display: flex; flex-direction: column; gap: 10px; }
+  .tool-call-row { display: flex; align-items: center; gap: 8px; }
+  .form-select {
+    background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-primary);
+    font-family: 'Inter', sans-serif; font-size: 12px; padding: 7px 10px;
+    border-radius: 8px; outline: none; cursor: pointer; flex: 1;
+    transition: border-color 0.15s ease;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none' stroke='%23555' stroke-width='1.5'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 10px center;
+    padding-right: 28px;
+  }
+  .form-select:focus { border-color: rgba(255,255,255,0.2); }
+  .form-select option { background: #1a1a1a; }
+  .params-textarea {
+    background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-primary);
+    font-family: monospace; font-size: 11px; padding: 10px 12px;
+    border-radius: 8px; outline: none; resize: vertical; width: 100%;
+    min-height: 64px; line-height: 1.5;
+    transition: border-color 0.15s ease;
+  }
+  .params-textarea:focus { border-color: rgba(255,255,255,0.2); }
+  .call-tool-btn {
+    background: var(--accent-purple); border: none; color: white;
+    font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600;
+    padding: 7px 16px; border-radius: 8px; cursor: pointer;
+    transition: all 0.15s ease; display: flex; align-items: center; gap: 6px; white-space: nowrap;
+  }
+  .call-tool-btn:hover { background: #6d28d9; }
+  .call-tool-btn:disabled { background: #333; color: var(--text-muted); cursor: not-allowed; }
+
+  /* Session panel actions row */
+  .session-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .action-btn {
+    background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-secondary);
+    font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 500;
+    padding: 6px 14px; border-radius: 8px; cursor: pointer;
+    transition: all 0.15s ease; display: flex; align-items: center; gap: 6px;
+  }
+  .action-btn:hover { background: var(--bg-hover); color: var(--text-primary); border-color: #3a3a3a; }
+  .action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .action-btn.accent { background: rgba(59,130,246,0.1); border-color: rgba(59,130,246,0.3); color: var(--accent-blue); }
+  .action-btn.accent:hover { background: rgba(59,130,246,0.2); }
+
+  /* Divider */
+  .panel-divider { height: 1px; background: var(--border); margin: 0 -18px; }
+
+  /* ══ META-AGENT REPORT MODAL ══ */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    z-index: 1000; display: none; align-items: center; justify-content: center;
+    padding: 24px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #1a1a1a; border: 1px solid var(--border); border-radius: 16px;
+    width: 100%; max-width: 560px; max-height: 85vh;
+    display: flex; flex-direction: column;
+    animation: slide-in 0.2s ease;
+  }
+  .modal-wide { max-width: 680px; }
+  .modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .modal-header-title { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+  .modal-close {
+    background: none; border: none; cursor: pointer; color: var(--text-muted);
+    font-size: 18px; line-height: 1; padding: 2px 6px; border-radius: 4px;
+    transition: all 0.15s ease;
+  }
+  .modal-close:hover { color: var(--text-primary); background: var(--bg-hover); }
+  .modal-body { padding: 20px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 16px; }
+  .modal-footer { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-shrink: 0; }
+
+  /* Config form */
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .form-input {
+    background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-primary);
+    font-family: 'Inter', sans-serif; font-size: 13px; padding: 9px 12px;
+    border-radius: 8px; outline: none; width: 100%;
+    transition: border-color 0.15s ease;
+  }
+  .form-input:focus { border-color: rgba(255,255,255,0.25); }
+  .form-input::placeholder { color: var(--text-muted); }
+  .form-hint { font-size: 11px; color: var(--text-muted); }
+
+  .btn-primary {
+    background: var(--text-primary); border: none; color: #141414;
+    font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
+    padding: 8px 18px; border-radius: 8px; cursor: pointer; transition: all 0.15s ease;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .btn-primary:hover { background: #e5e5e5; }
+  .btn-ghost {
+    background: none; border: 1px solid var(--border); color: var(--text-secondary);
+    font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500;
+    padding: 8px 18px; border-radius: 8px; cursor: pointer; transition: all 0.15s ease;
+  }
+  .btn-ghost:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+  /* Report styles */
+  .report-score-card {
+    background: var(--bg-elevated); border-radius: 12px; padding: 16px 20px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .report-score-num { font-size: 36px; font-weight: 700; color: var(--text-primary); line-height: 1; }
+  .report-score-label { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .report-score-bar-wrap { flex: 1; height: 6px; background: var(--border); border-radius: 9999px; overflow: hidden; }
+  .report-score-bar { height: 100%; border-radius: 9999px; transition: width 0.8s ease; }
+
+  .report-section-title { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 8px; }
+  .report-list { display: flex; flex-direction: column; gap: 6px; }
+  .report-list-item { font-size: 12px; color: var(--text-secondary); line-height: 1.55; padding: 8px 12px; background: var(--bg-elevated); border-radius: 8px; }
+  .report-list-item::before { content: "↳ "; color: var(--text-muted); }
+
+  .report-tool-item {
+    display: flex; gap: 10px;
+    padding: 8px 12px; background: var(--bg-elevated); border-radius: 8px; margin-bottom: 6px;
+  }
+  .report-tool-name { font-size: 12px; font-weight: 600; color: var(--accent-blue); white-space: nowrap; min-width: 90px; }
+  .report-tool-tip { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+
+  .report-meta { font-size: 11px; color: var(--text-muted); padding: 8px 12px; background: var(--bg-elevated); border-radius: 8px; }
+
+  /* Loading state */
+  .loading-row { display: flex; align-items: center; gap: 8px; padding: 12px 0; color: var(--text-muted); font-size: 13px; }
+  .spinner { width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--text-secondary); border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Error inline */
+  .inline-error { font-size: 12px; color: var(--accent-red); padding: 8px 12px; background: rgba(239,68,68,0.08); border-radius: 8px; border: 1px solid rgba(239,68,68,0.2); }
+
+  /* ══ TOAST ══ */
+  #toast {
+    position: fixed; bottom: 28px; right: 28px;
+    background: #2a2a2a; border: 1px solid var(--border); color: var(--text-primary);
+    font-size: 13px; font-weight: 500; padding: 10px 18px; border-radius: 9999px;
+    z-index: 9999; opacity: 0; transform: translateY(8px);
+    transition: opacity 0.2s ease, transform 0.2s ease; pointer-events: none;
+    max-width: 340px; text-align: center;
+  }
+  #toast.show { opacity: 1; transform: translateY(0); }
+  #toast.error { border-color: rgba(239,68,68,0.4); background: #2a1a1a; }
+
+  /* Restore button */
+  #restore-sidebar {
+    position: fixed; top: 16px; left: 12px; z-index: 100;
+    background: #1a1a1a; border: 1px solid var(--border); border-radius: 8px;
+    width: 32px; height: 32px; display: none;
+    align-items: center; justify-content: center; cursor: pointer;
+    color: var(--text-muted); transition: all 0.15s ease;
+  }
+  #restore-sidebar:hover { background: var(--bg-hover); color: var(--text-secondary); }
+  #restore-sidebar.visible { display: flex; }
+
+  @media (max-width: 768px) {
+    #sidebar { width: 0; min-width: 0; }
+    #restore-sidebar { display: flex; }
+  }
+
+  @keyframes input-pulse {
+    0%   { border-color: var(--border); }
+    50%  { border-color: rgba(124,58,237,0.5); box-shadow: 0 0 0 3px rgba(124,58,237,0.1); }
+    100% { border-color: rgba(255,255,255,0.25); }
+  }
+  .input-box.pulse { animation: input-pulse 0.45s ease forwards; }
+</style>
+</head>
+<body>
+
+<!-- ── SIDEBAR ── -->
+<nav id="sidebar">
+  <div class="sidebar-inner">
+    <div class="sidebar-logo">
+      <div class="logo-left">
+        <div class="logo-icon">
+          <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8 1L10.5 6H14L10.5 9L12 14L8 11L4 14L5.5 9L2 6H5.5L8 1Z"/>
+          </svg>
+        </div>
+        <span class="logo-text">nexus</span>
+      </div>
+      <button class="collapse-btn" id="collapse-btn" title="Collapse sidebar">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+          <rect x="2" y="2" width="12" height="12" rx="2"/>
+          <line x1="6" y1="2" x2="6" y2="14"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="sidebar-nav">
+      <div class="nav-item active" id="nav-new-task">
+        <span class="nav-icon">✦</span>
+        <span>New task</span>
+      </div>
+      <div class="nav-item" id="nav-agents">
+        <span class="nav-icon">◎</span>
+        <span>Agents</span>
+        <span class="nav-badge">New</span>
+      </div>
+      <div class="nav-item">
+        <span class="nav-icon">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+            <circle cx="7" cy="7" r="4.5"/>
+            <line x1="10.5" y1="10.5" x2="13.5" y2="13.5"/>
+          </svg>
+        </span>
+        <span>Search</span>
+      </div>
+      <div class="nav-item">
+        <span class="nav-icon">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+            <rect x="2" y="3" width="12" height="10" rx="1.5"/>
+            <line x1="5" y1="7" x2="11" y2="7"/>
+            <line x1="5" y1="9.5" x2="9" y2="9.5"/>
+          </svg>
+        </span>
+        <span>Library</span>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="section-header">
+        <span class="section-label">Projects</span>
+        <button class="section-action" title="New project">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8">
+            <line x1="7" y1="2" x2="7" y2="12"/>
+            <line x1="2" y1="7" x2="12" y2="7"/>
+          </svg>
+        </button>
+      </div>
+      <div class="nav-item">
+        <span class="nav-icon">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="2" y="2" width="11" height="11" rx="2"/>
+          </svg>
+        </span>
+        <span>New project</span>
+      </div>
+    </div>
+
+    <div class="tasks-section">
+      <div class="sidebar-section" style="padding-bottom:0;">
+        <div class="section-header">
+          <span class="section-label">All tasks</span>
+          <button class="section-action" title="Filter tasks">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8">
+              <line x1="2" y1="4" x2="12" y2="4"/>
+              <line x1="4" y1="7" x2="10" y2="7"/>
+              <line x1="6" y1="10" x2="8" y2="10"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div id="tasks-container" class="tasks-empty">
+        <span class="tasks-empty-text">Create a new task<br>to get started</span>
+      </div>
+    </div>
+
+    <div class="sidebar-invite">
+      <div class="invite-avatar">👤</div>
+      <div class="invite-text">
+        <div class="invite-title">Share AgentNexus with a friend</div>
+        <div class="invite-subtitle">Get 500 credits each</div>
+      </div>
+      <div class="invite-chevron">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8">
+          <polyline points="5,3 9,7 5,11"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="sidebar-bottom-icons">
+      <button class="bottom-icon-btn" id="btn-config-bottom" title="API Configuration">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="8" cy="8" r="2.5"/>
+          <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41"/>
+        </svg>
+      </button>
+      <button class="bottom-icon-btn" title="Grid view">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="2" y="2" width="5" height="5" rx="1"/>
+          <rect x="9" y="2" width="5" height="5" rx="1"/>
+          <rect x="2" y="9" width="5" height="5" rx="1"/>
+          <rect x="9" y="9" width="5" height="5" rx="1"/>
+        </svg>
+      </button>
+      <button class="bottom-icon-btn" title="Tablet view">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="3" y="1.5" width="10" height="13" rx="2"/>
+          <circle cx="8" cy="12.5" r="0.8" fill="currentColor" stroke="none"/>
+        </svg>
+      </button>
+      <button class="bottom-icon-btn" title="Layout">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="2" y="2" width="12" height="12" rx="2"/>
+          <line x1="2" y1="6.5" x2="14" y2="6.5"/>
+          <line x1="8" y1="6.5" x2="8" y2="14"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<button id="restore-sidebar" title="Show sidebar">
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8">
+    <rect x="1" y="1" width="12" height="12" rx="2"/>
+    <line x1="5" y1="1" x2="5" y2="13"/>
+  </svg>
+</button>
+
+<!-- ── MAIN CONTENT ── -->
+<main id="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="health-indicator" id="health-indicator" title="API health status">
+        <div class="health-dot checking" id="health-dot"></div>
+        <span id="health-text">checking</span>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <button class="topbar-config" id="btn-config-top">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="6" cy="6" r="1.8"/>
+          <path d="M6 1v1.5M6 9.5V11M1 6h1.5M9.5 6H11M2.4 2.4l1.05 1.05M8.55 8.55l1.05 1.05M2.4 9.6l1.05-1.05M8.55 3.45l1.05-1.05"/>
+        </svg>
+        Configure API
+      </button>
+      <button class="topbar-free">Free plan</button>
+      <button class="topbar-trial">Start free trial</button>
+    </div>
+  </div>
+
+  <div class="hero">
+    <div class="hero-inner">
+
+      <h1 class="hero-title">What can I do for you?</h1>
+
+      <!-- Input box -->
+      <div class="input-box" id="input-box" onclick="document.getElementById('main-input').focus()">
+        <textarea id="main-input" class="input-field" placeholder="Assign a task or ask anything" rows="1"></textarea>
+        <div class="agent-type-row">
+          <span class="agent-type-label">Agent:</span>
+          <button class="agent-type-pill selected" data-type="research">research</button>
+          <button class="agent-type-pill" data-type="codegen">codegen</button>
+          <button class="agent-type-pill" data-type="data">data</button>
+          <button class="agent-type-pill" data-type="web">web</button>
+        </div>
+        <div class="input-bottom">
+          <div class="input-left-icons">
+            <button class="input-icon-btn" title="Attach">
+              <svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.6">
+                <line x1="8.5" y1="2" x2="8.5" y2="15"/>
+                <line x1="2" y1="8.5" x2="15" y2="8.5"/>
+              </svg>
+            </button>
+            <button class="input-icon-btn" title="Workflow">
+              <svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.6">
+                <circle cx="4" cy="8.5" r="2.2"/>
+                <circle cx="13" cy="4" r="2.2"/>
+                <circle cx="13" cy="13" r="2.2"/>
+                <line x1="6.2" y1="7.5" x2="10.8" y2="4.8"/>
+                <line x1="6.2" y1="9.5" x2="10.8" y2="12.2"/>
+              </svg>
+            </button>
+            <button class="input-icon-btn" title="Agent">
+              <svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.6">
+                <circle cx="8.5" cy="6.5" r="3"/>
+                <path d="M3 14.5c0-3.04 2.46-5.5 5.5-5.5s5.5 2.46 5.5 5.5"/>
+              </svg>
+            </button>
+          </div>
+          <div class="input-right-icons">
+            <button class="input-icon-btn" title="Emoji">
+              <svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.6">
+                <circle cx="8.5" cy="8.5" r="6"/>
+                <circle cx="6.2" cy="7" r="0.8" fill="currentColor" stroke="none"/>
+                <circle cx="10.8" cy="7" r="0.8" fill="currentColor" stroke="none"/>
+                <path d="M5.5 10.5c0.8 1.5 5.2 1.5 6 0" stroke-linecap="round"/>
+              </svg>
+            </button>
+            <button class="input-icon-btn" title="Microphone">
+              <svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.6">
+                <rect x="6" y="2" width="5" height="8" rx="2.5"/>
+                <path d="M3.5 8.5c0 2.76 2.24 5 5 5s5-2.24 5-5"/>
+                <line x1="8.5" y1="13.5" x2="8.5" y2="15.5"/>
+              </svg>
+            </button>
+            <button class="submit-btn" id="submit-btn" title="Launch agent (Enter)">
+              <span id="submit-label">Launch</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Connect tools row -->
+      <div class="connect-tools" id="connect-tools-row">
+        <div class="connect-tools-link">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.6">
+            <path d="M8 5a3 3 0 0 0-3-3L3.5 3.5A1.5 1.5 0 0 1 5.5 5H7a1 1 0 0 1 1 1.5L6.5 8a3 3 0 0 0 3-3H8z" stroke="none" fill="currentColor"/>
+            <path d="M8.5 9.5L10 11M4.5 4.5L3 3M6 9.5l-1.5 1.5a3 3 0 0 1 0-4.5L6 5" stroke-linecap="round"/>
+          </svg>
+          Connect your tools to AgentNexus
+        </div>
+        <div class="tool-dots">
+          <div class="tool-dot" style="background:#ea4335;" title="Gmail">G</div>
+          <div class="tool-dot" style="background:#4285f4;" title="Calendar">C</div>
+          <div class="tool-dot" style="background:#4a154b;" title="Slack">S</div>
+          <div class="tool-dot" style="background:#24292e;" title="GitHub">
+            <svg width="10" height="10" viewBox="0 0 16 16" fill="white">
+              <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+            </svg>
+          </div>
+          <div class="tool-dot" style="background:#e8ab40;" title="Notion">N</div>
+        </div>
+        <button class="connect-close" id="connect-close" title="Dismiss">×</button>
+      </div>
+
+      <!-- Quick action pills -->
+      <div class="pills-row">
+        <button class="pill" data-task="Create a slide deck about AI trends in 2025" data-type="research">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="1" y="2" width="12" height="10" rx="1.5"/>
+            <line x1="4" y1="5.5" x2="10" y2="5.5"/>
+            <line x1="4" y1="8" x2="8" y2="8"/>
+          </svg>
+          Create slides
+        </button>
+        <button class="pill" data-task="Build a landing page with hero section and CTA" data-type="codegen">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="7" cy="7" r="5.5"/>
+            <path d="M2 7h10M7 2c-1.5 1.8-2.5 3.3-2.5 5S5.5 10.2 7 12M7 2c1.5 1.8 2.5 3.3 2.5 5S8.5 10.2 7 12"/>
+          </svg>
+          Build website
+        </button>
+        <button class="pill" data-task="Develop a REST API with authentication and CRUD operations" data-type="codegen">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="3.5" y="1" width="7" height="12" rx="2"/>
+            <circle cx="7" cy="11.5" r="0.6" fill="currentColor" stroke="none"/>
+          </svg>
+          Develop apps
+        </button>
+        <button class="pill" data-task="Design a modern UI component system" data-type="web">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M2 10L7 3l5 7"/>
+            <circle cx="7" cy="3" r="1.2" fill="currentColor" stroke="none"/>
+          </svg>
+          Design
+        </button>
+        <button class="pill" id="pill-more">
+          <span style="letter-spacing:2px; font-size:11px;">···</span>
+          More
+        </button>
+      </div>
+
+      <!-- Session panel (injected by JS when a session is active) -->
+      <div id="session-panel" style="display:none; width:100%; max-width:700px; margin-top:20px;">
+      </div>
+
+      <!-- Feature card (hidden when session is active) -->
+      <div class="feature-card-wrap" id="feature-card-wrap">
+        <div class="feature-card" id="feature-card">
+          <div class="feature-card-left">
+            <div class="feature-card-title" id="card-title">Create skills</div>
+            <div class="feature-card-desc" id="card-desc">Automate your workflow with custom skills for repetitive tasks.</div>
+          </div>
+          <div class="feature-card-right" id="card-visual"></div>
+        </div>
+        <div class="card-dots">
+          <button class="card-dot active" data-idx="0"></button>
+          <button class="card-dot" data-idx="1"></button>
+          <button class="card-dot" data-idx="2"></button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<!-- ── CONFIG MODAL ── -->
+<div class="modal-overlay" id="config-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-header-title">API Configuration</span>
+      <button class="modal-close" id="config-modal-close">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Base URL</label>
+        <input class="form-input" id="cfg-base-url" placeholder="http://localhost:8000" autocomplete="off" spellcheck="false">
+        <span class="form-hint">FastAPI server address (main.py runs on port 8000)</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tenant ID (X-Tenant-ID)</label>
+        <input class="form-input" id="cfg-tenant-id" placeholder="enterprise-A" autocomplete="off" spellcheck="false">
+        <span class="form-hint">Must match the <code style="font-family:monospace;font-size:10px;background:#2a2a2a;padding:1px 4px;border-radius:3px;">tid</code> claim in your JWT</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label">JWT Token (Authorization Bearer)</label>
+        <input class="form-input" id="cfg-token" placeholder="eyJhbGciOiJIUzI1NiJ9..." autocomplete="off" spellcheck="false">
+        <span class="form-hint">Generate with: <code style="font-family:monospace;font-size:10px;background:#2a2a2a;padding:1px 4px;border-radius:3px;">python -c "from jose import jwt; print(jwt.encode({'tid':'enterprise-A'},'changeme-set-a-real-secret',algorithm='HS256'))"</code></span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="cfg-cancel">Cancel</button>
+      <button class="btn-primary" id="cfg-save">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.7">
+          <path d="M2 7l3.5 3.5L11 3"/>
+        </svg>
+        Save &amp; Test Health
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── META-AGENT REPORT MODAL ── -->
+<div class="modal-overlay" id="report-modal">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <span class="modal-header-title">Meta-Agent Report — last 24h</span>
+      <button class="modal-close" id="report-modal-close">×</button>
+    </div>
+    <div class="modal-body" id="report-body">
+      <div class="loading-row">
+        <div class="spinner"></div>
+        Fetching analysis from Qwen meta-agent…
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+//  CONFIG  (persisted in localStorage)
+// ══════════════════════════════════════════════════════════
+const CFG_KEY = 'nexus_api_cfg';
+
+function loadCfg() {
+  try { return JSON.parse(localStorage.getItem(CFG_KEY)) || {}; } catch { return {}; }
+}
+function saveCfg(c) { localStorage.setItem(CFG_KEY, JSON.stringify(c)); }
+
+let cfg = Object.assign({ baseUrl: 'http://localhost:8000', tenantId: '', token: '' }, loadCfg());
+
+// ══════════════════════════════════════════════════════════
+//  API CLIENT
+// ══════════════════════════════════════════════════════════
+async function api(method, path, body) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (cfg.tenantId) headers['X-Tenant-ID'] = cfg.tenantId;
+  if (cfg.token)    headers['Authorization'] = 'Bearer ' + cfg.token;
+
+  const opts = { method, headers };
+  if (body !== undefined) opts.body = JSON.stringify(body);
+
+  const res = await fetch(cfg.baseUrl + path, opts);
+  const json = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    const msg = json.detail?.detail || json.detail || json.error || `HTTP ${res.status}`;
+    throw Object.assign(new Error(msg), { status: res.status, body: json });
+  }
+  return json;
+}
+
+// ══════════════════════════════════════════════════════════
+//  HEALTH CHECK
+// ══════════════════════════════════════════════════════════
+const healthDot  = document.getElementById('health-dot');
+const healthText = document.getElementById('health-text');
+
+async function checkHealth() {
+  healthDot.className = 'health-dot checking';
+  healthText.textContent = 'checking';
+  try {
+    const data = await fetch(cfg.baseUrl + '/health').then(r => r.json());
+    if (data.status === 'ok') {
+      healthDot.className = 'health-dot ok';
+      healthText.textContent = 'connected';
+    } else {
+      healthDot.className = 'health-dot degraded';
+      healthText.textContent = 'degraded';
+    }
+  } catch {
+    healthDot.className = 'health-dot degraded';
+    healthText.textContent = 'offline';
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════════
+let activeSession = null;   // { session_id, tenant_id, agent_type, status, created_at }
+let toolHistory   = [];     // recent tool calls
+let selectedAgent = 'research';
+let sessions      = [];     // all launched sessions
+
+// ══════════════════════════════════════════════════════════
+//  TOAST
+// ══════════════════════════════════════════════════════════
+let toastTimer = null;
+const toast = document.getElementById('toast');
+
+function showToast(msg, isError = false) {
+  if (toastTimer) clearTimeout(toastTimer);
+  toast.textContent = msg;
+  toast.className = isError ? 'show error' : 'show';
+  toastTimer = setTimeout(() => { toast.className = ''; }, 3000);
+}
+
+// ══════════════════════════════════════════════════════════
+//  SIDEBAR TASK LIST
+// ══════════════════════════════════════════════════════════
+function renderSidebarTasks() {
+  const container = document.getElementById('tasks-container');
+  if (sessions.length === 0) {
+    container.className = 'tasks-empty';
+    container.innerHTML = '<span class="tasks-empty-text">Create a new task<br>to get started</span>';
+    return;
+  }
+  container.className = 'sidebar-task-list';
+  container.innerHTML = sessions.map(s => {
+    const colors = { planning: '#eab308', running: '#22c55e', done: '#3b82f6', error: '#ef4444' };
+    const dotColor = colors[s.status] || '#555';
+    const isSelected = activeSession && activeSession.session_id === s.session_id;
+    return `
+      <div class="sidebar-task-item ${isSelected ? 'selected' : ''}" data-sid="${s.session_id}">
+        <div class="task-item-dot" style="background:${dotColor};"></div>
+        <div>
+          <div class="task-item-text">${escHtml(s.task || 'Unnamed task')}</div>
+          <div class="task-item-type">${s.agent_type} · ${s.status}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  container.querySelectorAll('.sidebar-task-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const sid = el.dataset.sid;
+      const s = sessions.find(x => x.session_id === sid);
+      if (s) selectSession(s);
+    });
+  });
+}
+
+function selectSession(s) {
+  activeSession = s;
+  renderSidebarTasks();
+  refreshSessionState();
+}
+
+// ══════════════════════════════════════════════════════════
+//  LAUNCH AGENT  →  POST /api/v1/agents/launch
+// ══════════════════════════════════════════════════════════
+async function launchAgent(taskText) {
+  const submitBtn   = document.getElementById('submit-btn');
+  const submitLabel = document.getElementById('submit-label');
+
+  submitBtn.disabled = true;
+  submitLabel.innerHTML = '<div class="spinner-sm" style="width:10px;height:10px;border:1.5px solid rgba(0,0,0,0.2);border-top-color:#141414;border-radius:50%;animation:spin 0.7s linear infinite;display:inline-block;"></div>';
+
+  try {
+    const data = await api('POST', '/api/v1/agents/launch', {
+      agent_type: selectedAgent,
+      task_plan:  { task: taskText, source: 'nexus-ui' },
+      context:    { user_agent: navigator.userAgent.slice(0, 80), timestamp: new Date().toISOString() }
+    });
+
+    data.task = taskText.slice(0, 60);
+    activeSession = data;
+    toolHistory = [];
+    sessions.unshift(data);
+
+    renderSidebarTasks();
+    showSessionPanel(data);
+    showFeatureCard(false);
+    showToast('Agent launched · session ' + data.session_id.slice(0, 8) + '…');
+  } catch (err) {
+    if (err.status === 401) {
+      showToast('Unauthorized — check Tenant ID and JWT token in Configure API', true);
+    } else {
+      showToast('Launch failed: ' + err.message, true);
+    }
+  } finally {
+    submitBtn.disabled = false;
+    submitLabel.textContent = 'Launch';
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+//  CALL TOOL  →  POST /api/v1/agents/{session_id}/tools/call
+// ══════════════════════════════════════════════════════════
+async function callTool(sessionId, toolName, inputParams) {
+  const data = await api('POST', `/api/v1/agents/${sessionId}/tools/call`, {
+    tool_name: toolName,
+    input_params: inputParams
+  });
+  return data;
+}
+
+// ══════════════════════════════════════════════════════════
+//  GET STATE  →  GET /api/v1/agents/{session_id}/state
+// ══════════════════════════════════════════════════════════
+async function getAgentState(sessionId) {
+  return api('GET', `/api/v1/agents/${sessionId}/state`);
+}
+
+// ══════════════════════════════════════════════════════════
+//  META-AGENT REPORT  →  GET /api/v1/meta-agent/report
+// ══════════════════════════════════════════════════════════
+async function getMetaReport() {
+  return api('GET', '/api/v1/meta-agent/report');
+}
+
+// ══════════════════════════════════════════════════════════
+//  SESSION PANEL UI
+// ══════════════════════════════════════════════════════════
+const toolDefaults = {
+  web_search: '{\n  "query": "your search query",\n  "limit": 5\n}',
+  code_exec:  '{\n  "language": "python",\n  "code": "print(\'hello world\')"\n}',
+  db_query:   '{\n  "sql": "SELECT * FROM agent_sessions LIMIT 10",\n  "timeout": 5\n}',
+  file_read:  '{\n  "path": "/path/to/file.txt",\n  "encoding": "utf-8"\n}',
+  api_call:   '{\n  "url": "https://api.example.com/endpoint",\n  "method": "GET"\n}'
+};
+
+function showFeatureCard(visible) {
+  document.getElementById('feature-card-wrap').style.display = visible ? '' : 'none';
+}
+
+function statusBadgeClass(status) {
+  const map = { planning: 'planning', running: 'running', done: 'done', error: 'error' };
+  return map[status] || 'planning';
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function renderToolCallItem(call) {
+  const colors = { success: '#22c55e', pending: '#eab308', error: '#ef4444' };
+  const dotColor = colors[call.status] || '#555';
+  const latency = call.latency_ms != null ? `${call.latency_ms}ms` : '';
+  const callId  = call.call_id ? call.call_id.slice(0, 8) + '…' : '';
+  const time    = call.called_at ? new Date(call.called_at).toLocaleTimeString() : '';
+  return `
+    <div class="tool-call-item">
+      <div class="tool-call-status-dot" style="background:${dotColor};"></div>
+      <span class="tool-call-name">${escHtml(call.tool_name)}</span>
+      <span class="tool-call-id">${callId}</span>
+      <span class="tool-call-time">${time}</span>
+      <span class="tool-call-latency">${latency}</span>
+    </div>
+  `;
+}
+
+function showSessionPanel(session) {
+  const panel = document.getElementById('session-panel');
+  panel.style.display = '';
+
+  panel.innerHTML = `
+    <div class="session-panel">
+      <div class="session-header">
+        <div class="session-header-left">
+          <span class="session-icon">◎</span>
+          <span class="session-title">Active Session</span>
+          <span class="session-id-tag" id="sp-sid">${escHtml(session.session_id)}</span>
+          <span class="status-badge ${statusBadgeClass(session.status)}" id="sp-status">${escHtml(session.status)}</span>
+        </div>
+        <div class="session-header-actions">
+          <button class="icon-btn-sm" id="sp-refresh" title="Refresh state">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.6">
+              <path d="M11.5 2.5A5.5 5.5 0 1 0 12 6.5" stroke-linecap="round"/>
+              <polyline points="9,0.5 11.5,2.5 9.5,5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <button class="icon-btn-sm" id="sp-close" title="Close panel">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6">
+              <line x1="2" y1="2" x2="10" y2="10"/>
+              <line x1="10" y1="2" x2="2" y2="10"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="session-body">
+
+        <!-- Session meta -->
+        <div style="display:flex;gap:16px;font-size:11px;color:var(--text-muted);">
+          <span>Agent type: <span style="color:var(--text-secondary);font-weight:600;">${escHtml(session.agent_type)}</span></span>
+          <span>Tenant: <span style="color:var(--text-secondary);font-weight:600;">${escHtml(session.tenant_id || cfg.tenantId)}</span></span>
+          <span>Created: <span style="color:var(--text-secondary);">${session.created_at ? new Date(session.created_at).toLocaleTimeString() : '—'}</span></span>
+        </div>
+
+        <div class="panel-divider"></div>
+
+        <!-- Tool call form -->
+        <div>
+          <div class="section-title-sm">Call a tool</div>
+          <div class="tool-call-form">
+            <div class="tool-call-row">
+              <select class="form-select" id="sp-tool-select">
+                <option value="web_search">web_search</option>
+                <option value="code_exec">code_exec</option>
+                <option value="db_query">db_query</option>
+                <option value="file_read">file_read</option>
+                <option value="api_call">api_call</option>
+              </select>
+              <button class="call-tool-btn" id="sp-call-btn">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.7">
+                  <polygon points="3,1 11,6 3,11" fill="currentColor" stroke="none"/>
+                </svg>
+                Run
+              </button>
+            </div>
+            <textarea class="params-textarea" id="sp-params" spellcheck="false">${escHtml(toolDefaults.web_search)}</textarea>
+            <div id="sp-tool-error" style="display:none;"></div>
+          </div>
+        </div>
+
+        <div class="panel-divider"></div>
+
+        <!-- Tool history -->
+        <div>
+          <div class="section-title-sm">Recent tool calls</div>
+          <div class="tool-history-list" id="sp-history">
+            <div class="tool-history-empty">No tool calls yet</div>
+          </div>
+        </div>
+
+        <div class="panel-divider"></div>
+
+        <!-- Actions -->
+        <div class="session-actions">
+          <button class="action-btn accent" id="sp-report-btn">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="1.5" y="1.5" width="10" height="10" rx="2"/>
+              <line x1="4" y1="5" x2="9" y2="5"/>
+              <line x1="4" y1="7.5" x2="7" y2="7.5"/>
+            </svg>
+            Meta-Agent Report
+          </button>
+          <button class="action-btn" id="sp-copy-id" title="Copy session ID">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="4" y="4" width="8" height="8" rx="1.5"/>
+              <path d="M1 9V2a1 1 0 0 1 1-1h7"/>
+            </svg>
+            Copy session ID
+          </button>
+        </div>
+
+      </div>
+    </div>
+  `;
+
+  // Wire up panel events
+  document.getElementById('sp-tool-select').addEventListener('change', function() {
+    document.getElementById('sp-params').value = toolDefaults[this.value] || '{}';
+  });
+
+  document.getElementById('sp-call-btn').addEventListener('click', async () => {
+    const btn       = document.getElementById('sp-call-btn');
+    const toolName  = document.getElementById('sp-tool-select').value;
+    const rawParams = document.getElementById('sp-params').value.trim();
+    const errDiv    = document.getElementById('sp-tool-error');
+
+    let inputParams;
+    try {
+      inputParams = JSON.parse(rawParams);
+    } catch {
+      errDiv.style.display = '';
+      errDiv.className = 'inline-error';
+      errDiv.textContent = 'Invalid JSON in input params';
+      return;
+    }
+    errDiv.style.display = 'none';
+
+    btn.disabled = true;
+    btn.innerHTML = '<div style="width:10px;height:10px;border:1.5px solid rgba(255,255,255,0.2);border-top-color:white;border-radius:50%;animation:spin 0.7s linear infinite;"></div> Running…';
+
+    try {
+      const result = await callTool(activeSession.session_id, toolName, inputParams);
+      toolHistory.unshift(result);
+      renderToolHistory();
+      showToast(`${toolName} completed in ${result.latency_ms}ms`);
+    } catch (err) {
+      errDiv.style.display = '';
+      errDiv.className = 'inline-error';
+      errDiv.textContent = 'Error: ' + err.message;
+      showToast('Tool call failed: ' + err.message, true);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.7"><polygon points="3,1 11,6 3,11" fill="currentColor" stroke="none"/></svg> Run';
+    }
+  });
+
+  document.getElementById('sp-refresh').addEventListener('click', refreshSessionState);
+
+  document.getElementById('sp-close').addEventListener('click', () => {
+    document.getElementById('session-panel').style.display = 'none';
+    showFeatureCard(true);
+    activeSession = null;
+    renderSidebarTasks();
+  });
+
+  document.getElementById('sp-report-btn').addEventListener('click', openReportModal);
+
+  document.getElementById('sp-copy-id').addEventListener('click', () => {
+    navigator.clipboard.writeText(activeSession.session_id).then(() => {
+      showToast('Session ID copied');
+    }).catch(() => {
+      showToast(activeSession.session_id);
+    });
+  });
+}
+
+function renderToolHistory() {
+  const container = document.getElementById('sp-history');
+  if (!container) return;
+  if (toolHistory.length === 0) {
+    container.innerHTML = '<div class="tool-history-empty">No tool calls yet</div>';
+    return;
+  }
+  container.innerHTML = toolHistory.map(renderToolCallItem).join('');
+}
+
+async function refreshSessionState() {
+  if (!activeSession) return;
+  const btn = document.getElementById('sp-refresh');
+  if (btn) { btn.style.opacity = '0.5'; btn.disabled = true; }
+  try {
+    const data = await getAgentState(activeSession.session_id);
+    activeSession = Object.assign(activeSession, data.session);
+    toolHistory   = data.recent_tool_calls || [];
+
+    // Update status badge
+    const statusEl = document.getElementById('sp-status');
+    if (statusEl) {
+      statusEl.className = `status-badge ${statusBadgeClass(activeSession.status)}`;
+      statusEl.textContent = activeSession.status;
+    }
+    // Update sidebar
+    const s = sessions.find(x => x.session_id === activeSession.session_id);
+    if (s) s.status = activeSession.status;
+    renderSidebarTasks();
+    renderToolHistory();
+    showToast('State refreshed');
+  } catch (err) {
+    showToast('Refresh failed: ' + err.message, true);
+  } finally {
+    if (btn) { btn.style.opacity = ''; btn.disabled = false; }
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+//  META-AGENT REPORT MODAL
+// ══════════════════════════════════════════════════════════
+async function openReportModal() {
+  const modal = document.getElementById('report-modal');
+  const body  = document.getElementById('report-body');
+  modal.classList.add('open');
+  body.innerHTML = '<div class="loading-row"><div class="spinner"></div>Fetching analysis from Qwen meta-agent…</div>';
+
+  try {
+    const data = await getMetaReport();
+    renderReport(data);
+  } catch (err) {
+    body.innerHTML = `<div class="inline-error">Failed to load report: ${escHtml(err.message)}</div>`;
+  }
+}
+
+function renderReport(data) {
+  const body = document.getElementById('report-body');
+  const qa   = data.qwen_analysis || {};
+  const score = qa.efficiency_score ?? 0;
+  const scoreColor = score >= 75 ? '#22c55e' : score >= 50 ? '#eab308' : '#ef4444';
+
+  const failureHtml = (qa.failure_patterns || []).map(p =>
+    `<div class="report-list-item">${escHtml(p)}</div>`
+  ).join('');
+
+  const recoHtml = (qa.top_3_recommendations || []).map(r =>
+    `<div class="report-list-item">${escHtml(r)}</div>`
+  ).join('');
+
+  const toolOptHtml = Object.entries(qa.tool_optimizations || {}).map(([k, v]) =>
+    `<div class="report-tool-item">
+      <div class="report-tool-name">${escHtml(k)}</div>
+      <div class="report-tool-tip">${escHtml(v)}</div>
+    </div>`
+  ).join('');
+
+  const rawStatsCount = (data.raw_stats || []).length;
+
+  body.innerHTML = `
+    <div class="report-score-card">
+      <div>
+        <div class="report-score-num" style="color:${scoreColor};">${score}</div>
+        <div class="report-score-label">Efficiency score</div>
+      </div>
+      <div class="report-score-bar-wrap">
+        <div class="report-score-bar" style="width:${score}%;background:${scoreColor};"></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="report-section-title">Failure Patterns</div>
+      <div class="report-list">${failureHtml || '<div class="report-list-item">No failure patterns detected</div>'}</div>
+    </div>
+
+    <div>
+      <div class="report-section-title">Top Recommendations</div>
+      <div class="report-list">${recoHtml || '<div class="report-list-item">No recommendations</div>'}</div>
+    </div>
+
+    <div>
+      <div class="report-section-title">Tool Optimizations</div>
+      ${toolOptHtml || '<div class="report-list-item">No tool optimization data</div>'}
+    </div>
+
+    <div class="report-meta">
+      Period: <strong>${escHtml(data.period || 'last_24h')}</strong> ·
+      Tenant: <strong>${escHtml(data.tenant_id || cfg.tenantId)}</strong> ·
+      Raw stats rows: <strong>${rawStatsCount}</strong>
+    </div>
+  `;
+}
+
+// ══════════════════════════════════════════════════════════
+//  CONFIG MODAL
+// ══════════════════════════════════════════════════════════
+function openConfigModal() {
+  document.getElementById('cfg-base-url').value  = cfg.baseUrl  || '';
+  document.getElementById('cfg-tenant-id').value = cfg.tenantId || '';
+  document.getElementById('cfg-token').value     = cfg.token    || '';
+  document.getElementById('config-modal').classList.add('open');
+}
+function closeConfigModal() {
+  document.getElementById('config-modal').classList.remove('open');
+}
+
+document.getElementById('btn-config-top').addEventListener('click', openConfigModal);
+document.getElementById('btn-config-bottom').addEventListener('click', openConfigModal);
+document.getElementById('config-modal-close').addEventListener('click', closeConfigModal);
+document.getElementById('cfg-cancel').addEventListener('click', closeConfigModal);
+
+document.getElementById('config-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeConfigModal();
+});
+document.getElementById('report-modal').addEventListener('click', function(e) {
+  if (e.target === this) document.getElementById('report-modal').classList.remove('open');
+});
+
+document.getElementById('cfg-save').addEventListener('click', async () => {
+  cfg.baseUrl  = document.getElementById('cfg-base-url').value.trim().replace(/\/$/, '');
+  cfg.tenantId = document.getElementById('cfg-tenant-id').value.trim();
+  cfg.token    = document.getElementById('cfg-token').value.trim();
+  saveCfg(cfg);
+  closeConfigModal();
+  showToast('Config saved — testing connection…');
+  await checkHealth();
+  const isOk = healthDot.classList.contains('ok');
+  showToast(isOk ? 'Connected to AgentNexus API' : 'Could not reach API — check Base URL', !isOk);
+});
+
+document.getElementById('report-modal-close').addEventListener('click', () => {
+  document.getElementById('report-modal').classList.remove('open');
+});
+
+// ══════════════════════════════════════════════════════════
+//  FEATURE CARD (carousel)
+// ══════════════════════════════════════════════════════════
+const cardData = [
+  {
+    title: 'Create skills',
+    desc: 'Automate your workflow with custom skills for repetitive tasks.',
+    visual() {
+      return `
+        <div class="skill-bar"><div class="skill-dot" style="background:#22c55e;"></div><div class="skill-line"></div></div>
+        <div class="skill-bar"><div class="skill-dot" style="background:#3b82f6;"></div><div class="skill-line" style="width:70%;"></div></div>
+        <div class="skill-bar"><div class="skill-dot" style="background:#eab308;"></div><div class="skill-line" style="width:55%;"></div></div>
+      `;
+    }
+  },
+  {
+    title: 'Run agents',
+    desc: 'Deploy autonomous agents to handle complex workflows.',
+    visual() {
+      return `
+        <div class="agent-row"><div class="agent-status-dot" style="background:#22c55e;"></div><span style="font-size:10px;color:var(--text-muted);white-space:nowrap;">running</span><div class="agent-row-line"></div></div>
+        <div class="agent-row"><div class="agent-status-dot" style="background:#3b82f6;"></div><span style="font-size:10px;color:var(--text-muted);white-space:nowrap;">queued</span><div class="agent-row-line" style="width:60%;"></div></div>
+        <div class="agent-row"><div class="agent-status-dot" style="background:#eab308;"></div><span style="font-size:10px;color:var(--text-muted);white-space:nowrap;">pending</span><div class="agent-row-line" style="width:40%;"></div></div>
+      `;
+    }
+  },
+  {
+    title: 'Connect tools',
+    desc: 'Integrate your favorite apps in one click.',
+    visual() {
+      return `
+        <div class="agent-row"><div class="tool-dot" style="background:#ea4335;width:14px;height:14px;font-size:8px;">G</div><div class="agent-row-line"></div></div>
+        <div class="agent-row"><div class="tool-dot" style="background:#4a154b;width:14px;height:14px;font-size:8px;">S</div><div class="agent-row-line" style="width:65%;"></div></div>
+        <div class="agent-row"><div class="tool-dot" style="background:#24292e;border:1px solid #444;width:14px;height:14px;"><svg width="8" height="8" viewBox="0 0 16 16" fill="white"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></div><div class="agent-row-line" style="width:50%;"></div></div>
+      `;
+    }
+  }
+];
+
+let currentCard = 0;
+function renderCard(idx) {
+  const d = cardData[idx];
+  document.getElementById('card-title').textContent = d.title;
+  document.getElementById('card-desc').textContent  = d.desc;
+  document.getElementById('card-visual').innerHTML   = d.visual();
+  document.querySelectorAll('.card-dot').forEach((dot, i) => dot.classList.toggle('active', i === idx));
+}
+renderCard(0);
+document.querySelectorAll('.card-dot').forEach(dot => {
+  dot.addEventListener('click', () => { currentCard = parseInt(dot.dataset.idx); renderCard(currentCard); });
+});
+
+// ══════════════════════════════════════════════════════════
+//  SIDEBAR COLLAPSE
+// ══════════════════════════════════════════════════════════
+const sidebar    = document.getElementById('sidebar');
+const collapseBtn = document.getElementById('collapse-btn');
+const restoreBtn  = document.getElementById('restore-sidebar');
+
+function collapseSidebar() { sidebar.classList.add('collapsed'); restoreBtn.classList.add('visible'); }
+function expandSidebar()   { sidebar.classList.remove('collapsed'); restoreBtn.classList.remove('visible'); }
+
+collapseBtn.addEventListener('click', collapseSidebar);
+restoreBtn.addEventListener('click', expandSidebar);
+window.addEventListener('resize', () => { if (window.innerWidth <= 768) collapseSidebar(); else expandSidebar(); });
+
+// ══════════════════════════════════════════════════════════
+//  AGENT TYPE SELECTOR
+// ══════════════════════════════════════════════════════════
+document.querySelectorAll('.agent-type-pill').forEach(pill => {
+  pill.addEventListener('click', () => {
+    document.querySelectorAll('.agent-type-pill').forEach(p => p.classList.remove('selected'));
+    pill.classList.add('selected');
+    selectedAgent = pill.dataset.type;
+  });
+});
+
+// ══════════════════════════════════════════════════════════
+//  INPUT SUBMIT
+// ══════════════════════════════════════════════════════════
+const mainInput = document.getElementById('main-input');
+
+async function handleSubmit() {
+  const val = mainInput.value.trim();
+  if (!val) return;
+  if (!cfg.tenantId || !cfg.token) {
+    showToast('Configure your Tenant ID and JWT token first (Configure API button)', true);
+    openConfigModal();
+    return;
+  }
+  mainInput.value = '';
+  mainInput.style.height = 'auto';
+  await launchAgent(val);
+}
+
+document.getElementById('submit-btn').addEventListener('click', handleSubmit);
+
+mainInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(); }
+});
+mainInput.addEventListener('input', () => {
+  mainInput.style.height = 'auto';
+  mainInput.style.height = mainInput.scrollHeight + 'px';
+});
+
+// ══════════════════════════════════════════════════════════
+//  QUICK PILL SHORTCUTS
+// ══════════════════════════════════════════════════════════
+document.querySelectorAll('.pill[data-task]').forEach(pill => {
+  pill.addEventListener('click', () => {
+    mainInput.value = pill.dataset.task;
+    mainInput.style.height = 'auto';
+    mainInput.style.height = mainInput.scrollHeight + 'px';
+    // select the correct agent type pill
+    const type = pill.dataset.type;
+    if (type) {
+      document.querySelectorAll('.agent-type-pill').forEach(p => {
+        p.classList.toggle('selected', p.dataset.type === type);
+      });
+      selectedAgent = type;
+    }
+    mainInput.focus();
+  });
+});
+
+// ══════════════════════════════════════════════════════════
+//  NAV ITEMS
+// ══════════════════════════════════════════════════════════
+document.getElementById('nav-agents').addEventListener('click', () => showToast('Agents feature coming soon'));
+
+document.getElementById('nav-new-task').addEventListener('click', () => {
+  const box = document.getElementById('input-box');
+  box.classList.remove('pulse');
+  void box.offsetWidth;
+  box.classList.add('pulse');
+  mainInput.focus();
+  box.addEventListener('animationend', () => box.classList.remove('pulse'), { once: true });
+});
+
+// ══════════════════════════════════════════════════════════
+//  CONNECT TOOLS DISMISS
+// ══════════════════════════════════════════════════════════
+document.getElementById('connect-close').addEventListener('click', () => {
+  const row = document.getElementById('connect-tools-row');
+  row.style.transition = 'opacity 0.2s ease';
+  row.style.opacity = '0';
+  setTimeout(() => { row.style.display = 'none'; }, 200);
+});
+
+// ══════════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════════
+checkHealth();
+// Re-check health every 30 seconds
+setInterval(checkHealth, 30000);
+</script>
+</body>
+</html>
