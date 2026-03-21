@@ -11,4 +11,4 @@ qwen_report_*.json
 # All venv folders
 venv/**/*
 venv/
-*.pem
+*.pem.env
