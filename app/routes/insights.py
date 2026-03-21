@@ -8,10 +8,25 @@ Provides tenant-specific insights and analytics.
 
 import json
 import logging
+from datetime import date
+from decimal import Decimal
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
+
+
+def _to_json_safe(obj: Any) -> Any:
+    """Recursively convert DB types (Decimal, date, etc.) to JSON-safe primitives."""
+    if isinstance(obj, Decimal):
+        return float(obj)
+    if isinstance(obj, date):
+        return obj.isoformat()
+    if isinstance(obj, dict):
+        return {k: _to_json_safe(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_to_json_safe(v) for v in obj]
+    return obj
 
 from app.context import ctx_tenant
 from app.db import get_conn, release_conn
@@ -40,11 +55,7 @@ async def get_tenant_insights(tenant_id: str) -> JSONResponse:
     if tenant_id != current_tenant:
         raise HTTPException(
             status_code=403,
-            detail={
-                "error": "forbidden",
-                "code": "TENANT_MISMATCH",
-                "message": f"Tenant {tenant_id} does not match authenticated tenant {current_tenant}"
-            }
+            detail={"error": "forbidden", "code": "TENANT_MISMATCH"},
         )
     
     conn = await get_conn(tenant_id)
@@ -93,16 +104,17 @@ async def get_tenant_insights(tenant_id: str) -> JSONResponse:
                     tool_name,
                     COUNT(*) as call_count,
                     AVG(latency_ms) as avg_latency_ms,
-                    COUNT(CASE WHEN status = 'success' THEN 1 END) as success_count,
-                    COUNT(CASE WHEN status = 'failed' THEN 1 END) as failure_count
+                    COUNT(CASE WHEN t.status = 'success' THEN 1 END) as success_count,
+                    COUNT(CASE WHEN t.status = 'failed' THEN 1 END) as failure_count
                 FROM tool_call_history t
                 JOIN agent_sessions s ON t.session_id = s.session_id
-                WHERE s.tenant_id = %s 
+                WHERE s.tenant_id = %s
+                AND t.tenant_id = %s
                 AND s.created_at > NOW() - INTERVAL 24 HOUR
                 GROUP BY tool_name
                 ORDER BY call_count DESC
                 """,
-                (tenant_id,)
+                (tenant_id, tenant_id)
             )
             tool_stats = [dict(zip([d[0] for d in cur.description], row)) for row in await cur.fetchall()]
             
@@ -124,24 +136,7 @@ async def get_tenant_insights(tenant_id: str) -> JSONResponse:
             )
             daily_trend = [dict(zip([d[0] for d in cur.description], row)) for row in await cur.fetchall()]
             
-            # Get error patterns
-            await cur.execute(
-                """
-                SELECT 
-                    error_type,
-                    COUNT(*) as error_count,
-                    MAX(created_at) as last_occurrence
-                FROM agent_sessions 
-                WHERE tenant_id = %s 
-                AND status = 'failed'
-                AND created_at > NOW() - INTERVAL 24 HOUR
-                GROUP BY error_type
-                ORDER BY error_count DESC
-                LIMIT 5
-                """,
-                (tenant_id,)
-            )
-            error_patterns = [dict(zip([d[0] for d in cur.description], row)) for row in await cur.fetchall()]
+            error_patterns: list = []  # error_type column not in schema
             
     finally:
         await release_conn(tenant_id, conn)
@@ -177,4 +172,4 @@ async def get_tenant_insights(tenant_id: str) -> JSONResponse:
         }
     }
     
-    return JSONResponse(content=insights)
+    return JSONResponse(content=_to_json_safe(insights))

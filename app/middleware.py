@@ -30,31 +30,32 @@ _EXEMPT_PATHS = frozenset({
     # Token endpoint will still validate provided tenant id.
 })
 
-_MISMATCH = JSONResponse(
-    status_code=401,
-    content={"error": "unauthorized", "code": "TENANT_MISMATCH"},
-)
+def _mismatch() -> JSONResponse:
+    return JSONResponse(
+        status_code=401,
+        content={"error": "unauthorized", "code": "TENANT_MISMATCH"},
+    )
 
 
 async def tenant_middleware(request: Request, call_next):  # type: ignore[type-arg]
-    if request.url.path in _EXEMPT_PATHS:
+    if request.method == "OPTIONS" or request.url.path in _EXEMPT_PATHS:
         return await call_next(request)
 
     tenant_header = request.headers.get("X-Tenant-ID", "").strip()
     auth_header   = request.headers.get("Authorization", "").strip()
 
     if not tenant_header or not auth_header.startswith("Bearer "):
-        return _MISMATCH
+        return _mismatch()
 
     token = auth_header[len("Bearer "):]
 
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
     except JWTError:
-        return _MISMATCH
+        return _mismatch()
 
     if payload.get("tid", "") != tenant_header:
-        return _MISMATCH
+        return _mismatch()
 
     ctx_token = ctx_tenant.set(tenant_header)
     try:

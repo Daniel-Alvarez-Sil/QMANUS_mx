@@ -12,10 +12,17 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import ssl
 
 import aiomysql
 
-from app.config import TIDB_DB, TIDB_HOST, TIDB_PASS, TIDB_PORT, TIDB_USER
+from app.config import TIDB_DB, TIDB_HOST, TIDB_PASS, TIDB_PORT, TIDB_SSL, TIDB_USER
+
+_ssl_ctx: ssl.SSLContext | None = None
+if TIDB_SSL:
+    _ssl_ctx = ssl.create_default_context()
+    _ssl_ctx.check_hostname = True
+    _ssl_ctx.verify_mode = ssl.CERT_REQUIRED
 
 log = logging.getLogger("agentnexus.db")
 
@@ -51,6 +58,7 @@ async def _get_or_create_pool(tenant_id: str) -> aiomysql.Pool:
                 db=TIDB_DB,
                 maxsize=10,
                 autocommit=True,
+                ssl=_ssl_ctx,
             )
             pools[tenant_id] = pool
             log.info("Pool created  tenant=%s", tenant_id)
@@ -65,7 +73,7 @@ async def get_conn(tenant_id: str) -> aiomysql.Connection:
     pool = await _get_or_create_pool(tenant_id)
     conn = await pool.acquire()
     async with conn.cursor() as cur:
-        await cur.execute("SET SESSION tidb_isolation_level = 'READ-COMMITTED'")
+        await cur.execute("SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED")
     return conn
 
 

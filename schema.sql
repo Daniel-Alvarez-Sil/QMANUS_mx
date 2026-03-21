@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS tenants (
 );
 
 -- -----------------------------------------------------------------
--- Table 2: agent_sessions  (partitioned by tenant_id)
+-- Table 2: agent_sessions  (partitioned by tenant_id);
 -- -----------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS agent_sessions (
     session_id  VARCHAR(36)                                             NOT NULL,
@@ -31,11 +31,11 @@ CREATE TABLE IF NOT EXISTS agent_sessions (
     updated_at  TIMESTAMP(3)                                            NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
     PRIMARY KEY (tenant_id, session_id),
     INDEX idx_status (tenant_id, status, created_at)
-)
-PARTITION BY HASH(tenant_id) PARTITIONS 32;
+);
+
 
 -- -----------------------------------------------------------------
--- Table 3: tool_call_history  (partitioned by tenant_id)
+-- Table 3: tool_call_history  (partitioned by tenant_id);
 -- -----------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS tool_call_history (
     call_id       VARCHAR(36)                                          NOT NULL,
@@ -49,11 +49,11 @@ CREATE TABLE IF NOT EXISTS tool_call_history (
     called_at     TIMESTAMP(3)                                         NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     PRIMARY KEY (tenant_id, session_id, call_id),
     INDEX idx_tool (tenant_id, tool_name, called_at)
-)
-PARTITION BY HASH(tenant_id) PARTITIONS 32;
+);
+
 
 -- -----------------------------------------------------------------
--- TiFlash Replicas (HTAP columnar engine)
+-- TiFlash Replicas (HTAP columnar engine);
 -- -----------------------------------------------------------------
 ALTER TABLE agent_sessions    SET TIFLASH REPLICA 1;
 ALTER TABLE tool_call_history SET TIFLASH REPLICA 1;
@@ -70,7 +70,7 @@ INSERT INTO tenants (tenant_id, name, plan, status) VALUES
     ('ent-B', 'Enterprise Beta',  'growth',     'active');
 
 -- -----------------------------------------------------------------
--- 20 Agent Sessions  (10 per tenant)
+-- 20 Agent Sessions  (10 per tenant);
 -- -----------------------------------------------------------------
 -- Tenant ent-A: 6 completed, 2 failed, 2 running
 INSERT INTO agent_sessions (session_id, tenant_id, agent_type, status, task_plan, context, created_at) VALUES
@@ -159,10 +159,10 @@ INSERT INTO agent_sessions (session_id, tenant_id, agent_type, status, task_plan
         NOW() - INTERVAL 30 MINUTE);
 
 -- -----------------------------------------------------------------
--- 100 Tool Call History rows  (50 per tenant, ~5 per session)
+-- 100 Tool Call History rows  (50 per tenant, ~5 per session);
 -- -----------------------------------------------------------------
 
--- ent-A session sess-a-001 (5 calls: 3 success, 2 failed)
+-- ent-A session sess-a-001 (5 calls: 3 success, 2 failed);
 INSERT INTO tool_call_history (call_id, session_id, tenant_id, tool_name, input_params, output_result, status, latency_ms, called_at) VALUES
 ('call-a001-01','sess-a-001','ent-A','web_search',
  '{"query":"TiDB architecture best practices"}',
@@ -185,7 +185,7 @@ INSERT INTO tool_call_history (call_id, session_id, tenant_id, tool_name, input_
  '{"error":"upstream_timeout","retries":3}',
  'failed', 9800, NOW() - INTERVAL 22 HOUR + INTERVAL 30 MINUTE);
 
--- ent-A session sess-a-002 (5 calls: 4 success, 1 timeout)
+-- ent-A session sess-a-002 (5 calls: 4 success, 1 timeout);
 INSERT INTO tool_call_history (call_id, session_id, tenant_id, tool_name, input_params, output_result, status, latency_ms, called_at) VALUES
 ('call-a002-01','sess-a-002','ent-A','code_exec',
  '{"language":"python","code":"import pandas as pd\ndf = pd.read_csv(\"data.csv\")"}',
@@ -208,7 +208,7 @@ INSERT INTO tool_call_history (call_id, session_id, tenant_id, tool_name, input_
  '{"rows":100,"elapsed_ms":143}',
  'success', 143, NOW() - INTERVAL 21 HOUR + INTERVAL 20 MINUTE);
 
--- ent-A session sess-a-003 (5 calls: 5 success)
+-- ent-A session sess-a-003 (5 calls: 5 success);
 INSERT INTO tool_call_history (call_id, session_id, tenant_id, tool_name, input_params, output_result, status, latency_ms, called_at) VALUES
 ('call-a003-01','sess-a-003','ent-A','db_query',
  '{"sql":"SELECT COUNT(*) FROM events","timeout":30}',
@@ -231,7 +231,7 @@ INSERT INTO tool_call_history (call_id, session_id, tenant_id, tool_name, input_
  '{"rows_affected":100000,"elapsed_ms":312}',
  'success', 312, NOW() - INTERVAL 19 HOUR + INTERVAL 30 MINUTE);
 
--- ent-A session sess-a-004 (5 calls: 2 success, 3 failed)
+-- ent-A session sess-a-004 (5 calls: 2 success, 3 failed);
 INSERT INTO tool_call_history (call_id, session_id, tenant_id, tool_name, input_params, output_result, status, latency_ms, called_at) VALUES
 ('call-a004-01','sess-a-004','ent-A','web_search',
  '{"query":"site crawling best practices rate limiting"}',
@@ -254,7 +254,7 @@ INSERT INTO tool_call_history (call_id, session_id, tenant_id, tool_name, input_
  '{"rows":10,"elapsed_ms":55}',
  'success', 55, NOW() - INTERVAL 17 HOUR + INTERVAL 15 MINUTE);
 
--- ent-A session sess-a-005 (5 calls: 5 success)
+-- ent-A session sess-a-005 (5 calls: 5 success);
 INSERT INTO tool_call_history (call_id, session_id, tenant_id, tool_name, input_params, output_result, status, latency_ms, called_at) VALUES
 ('call-a005-01','sess-a-005','ent-A','web_search',
  '{"query":"multi-tenant SaaS architecture patterns 2024"}',
@@ -277,7 +277,7 @@ INSERT INTO tool_call_history (call_id, session_id, tenant_id, tool_name, input_
  '{"stdout":"Patterns found: 5","exit_code":0}',
  'success', 230, NOW() - INTERVAL 15 HOUR + INTERVAL 30 MINUTE);
 
--- ent-A session sess-a-006 (5 calls: 1 success, 3 failed, 1 timeout)
+-- ent-A session sess-a-006 (5 calls: 1 success, 3 failed, 1 timeout);
 INSERT INTO tool_call_history (call_id, session_id, tenant_id, tool_name, input_params, output_result, status, latency_ms, called_at) VALUES
 ('call-a006-01','sess-a-006','ent-A','file_read',
  '{"path":"/workspace/main.go","encoding":"utf-8"}',
@@ -300,7 +300,7 @@ INSERT INTO tool_call_history (call_id, session_id, tenant_id, tool_name, input_
  '{"error":"vet failed","stderr":"SA1006: Printf with no formatting directive"}',
  'failed', 1500, NOW() - INTERVAL 13 HOUR + INTERVAL 15 MINUTE);
 
--- ent-A session sess-a-007 (5 calls: 5 success)
+-- ent-A session sess-a-007 (5 calls: 5 success);
 INSERT INTO tool_call_history (call_id, session_id, tenant_id, tool_name, input_params, output_result, status, latency_ms, called_at) VALUES
 ('call-a007-01','sess-a-007','ent-A','db_query',
  '{"sql":"SELECT * FROM kafka_offsets","timeout":10}',
@@ -323,7 +323,7 @@ INSERT INTO tool_call_history (call_id, session_id, tenant_id, tool_name, input_
  '{"rows_affected":4,"elapsed_ms":25}',
  'success', 25, NOW() - INTERVAL 11 HOUR + INTERVAL 30 MINUTE);
 
--- ent-A session sess-a-008 (5 calls: 4 success, 1 failed)
+-- ent-A session sess-a-008 (5 calls: 4 success, 1 failed);
 INSERT INTO tool_call_history (call_id, session_id, tenant_id, tool_name, input_params, output_result, status, latency_ms, called_at) VALUES
 ('call-a008-01','sess-a-008','ent-A','web_search',
  '{"query":"PingCAP TiDB documentation site:docs.pingcap.com"}',
@@ -346,7 +346,7 @@ INSERT INTO tool_call_history (call_id, session_id, tenant_id, tool_name, input_
  '{"rows_affected":142,"elapsed_ms":99}',
  'success', 99, NOW() - INTERVAL 7 HOUR + INTERVAL 20 MINUTE);
 
--- ent-A session sess-a-009 (5 calls: 5 success)
+-- ent-A session sess-a-009 (5 calls: 5 success);
 INSERT INTO tool_call_history (call_id, session_id, tenant_id, tool_name, input_params, output_result, status, latency_ms, called_at) VALUES
 ('call-a009-01','sess-a-009','ent-A','web_search',
  '{"query":"Qwen API integration Python examples"}',
@@ -369,7 +369,7 @@ INSERT INTO tool_call_history (call_id, session_id, tenant_id, tool_name, input_
  '{"stdout":"Report generated: 5 recommendations","exit_code":0}',
  'success', 190, NOW() - INTERVAL 3 HOUR + INTERVAL 30 MINUTE);
 
--- ent-A session sess-a-010 (5 calls: 4 success, 1 timeout)
+-- ent-A session sess-a-010 (5 calls: 4 success, 1 timeout);
 INSERT INTO tool_call_history (call_id, session_id, tenant_id, tool_name, input_params, output_result, status, latency_ms, called_at) VALUES
 ('call-a010-01','sess-a-010','ent-A','code_exec',
  '{"language":"typescript","code":"npx create-next-app@latest agentnexus-ui"}',
@@ -392,7 +392,7 @@ INSERT INTO tool_call_history (call_id, session_id, tenant_id, tool_name, input_
  '{"rows":3,"elapsed_ms":44}',
  'success', 44, NOW() - INTERVAL 30 MINUTE);
 
--- ent-B session sess-b-001 (5 calls: 5 success)
+-- ent-B session sess-b-001 (5 calls: 5 success);
 INSERT INTO tool_call_history (call_id, session_id, tenant_id, tool_name, input_params, output_result, status, latency_ms, called_at) VALUES
 ('call-b001-01','sess-b-001','ent-B','web_search',
  '{"query":"vector database pgvector pinecone weaviate comparison 2024"}',
@@ -415,7 +415,7 @@ INSERT INTO tool_call_history (call_id, session_id, tenant_id, tool_name, input_
  '{"content":"{\"winner\":\"tidb\"}","size_bytes":4096}',
  'success', 78, NOW() - INTERVAL 22 HOUR + INTERVAL 30 MINUTE);
 
--- ent-B session sess-b-002 (5 calls: 4 success, 1 failed)
+-- ent-B session sess-b-002 (5 calls: 4 success, 1 failed);
 INSERT INTO tool_call_history (call_id, session_id, tenant_id, tool_name, input_params, output_result, status, latency_ms, called_at) VALUES
 ('call-b002-01','sess-b-002','ent-B','web_search',
  '{"query":"site:tidb.cloud pricing enterprise plans"}',
@@ -438,7 +438,7 @@ INSERT INTO tool_call_history (call_id, session_id, tenant_id, tool_name, input_
  '{"content":"# TiDB Pricing\n...","size_bytes":2048}',
  'success', 63, NOW() - INTERVAL 20 HOUR + INTERVAL 20 MINUTE);
 
--- ent-B session sess-b-003 (5 calls: 1 success, 3 failed, 1 timeout)
+-- ent-B session sess-b-003 (5 calls: 1 success, 3 failed, 1 timeout);
 INSERT INTO tool_call_history (call_id, session_id, tenant_id, tool_name, input_params, output_result, status, latency_ms, called_at) VALUES
 ('call-b003-01','sess-b-003','ent-B','db_query',
  '{"sql":"SELECT table_name FROM information_schema.tables WHERE table_schema=?","timeout":10}',
@@ -461,7 +461,7 @@ INSERT INTO tool_call_history (call_id, session_id, tenant_id, tool_name, input_
  '{"error":"upstream_timeout","retries":3}',
  'failed', 9400, NOW() - INTERVAL 18 HOUR + INTERVAL 15 MINUTE);
 
--- ent-B session sess-b-004 (5 calls: 5 success)
+-- ent-B session sess-b-004 (5 calls: 5 success);
 INSERT INTO tool_call_history (call_id, session_id, tenant_id, tool_name, input_params, output_result, status, latency_ms, called_at) VALUES
 ('call-b004-01','sess-b-004','ent-B','code_exec',
  '{"language":"rust","code":"cargo new agentnexus-worker"}',
@@ -484,7 +484,7 @@ INSERT INTO tool_call_history (call_id, session_id, tenant_id, tool_name, input_
  '{"rows_affected":1,"elapsed_ms":35}',
  'success', 35, NOW() - INTERVAL 16 HOUR + INTERVAL 30 MINUTE);
 
--- ent-B session sess-b-005 (5 calls: 1 success, 4 failed)
+-- ent-B session sess-b-005 (5 calls: 1 success, 4 failed);
 INSERT INTO tool_call_history (call_id, session_id, tenant_id, tool_name, input_params, output_result, status, latency_ms, called_at) VALUES
 ('call-b005-01','sess-b-005','ent-B','web_search',
  '{"query":"HTAP workload TiDB TiFlash benchmark sysbench 2024"}',
@@ -507,7 +507,7 @@ INSERT INTO tool_call_history (call_id, session_id, tenant_id, tool_name, input_
  '{"error":"upstream_timeout","retries":3}',
  'failed', 10000, NOW() - INTERVAL 14 HOUR + INTERVAL 15 MINUTE);
 
--- ent-B session sess-b-006 (5 calls: 5 success)
+-- ent-B session sess-b-006 (5 calls: 5 success);
 INSERT INTO tool_call_history (call_id, session_id, tenant_id, tool_name, input_params, output_result, status, latency_ms, called_at) VALUES
 ('call-b006-01','sess-b-006','ent-B','web_search',
  '{"query":"arxiv.org machine learning papers 2024 agents"}',
@@ -530,7 +530,7 @@ INSERT INTO tool_call_history (call_id, session_id, tenant_id, tool_name, input_
  '{"content":"{\"total\":50,\"topics\":[\"agents\"]}","size_bytes":2048}',
  'success', 55, NOW() - INTERVAL 12 HOUR + INTERVAL 30 MINUTE);
 
--- ent-B session sess-b-007 (5 calls: 5 success)
+-- ent-B session sess-b-007 (5 calls: 5 success);
 INSERT INTO tool_call_history (call_id, session_id, tenant_id, tool_name, input_params, output_result, status, latency_ms, called_at) VALUES
 ('call-b007-01','sess-b-007','ent-B','db_query',
  '{"sql":"SELECT project, SUM(cost_usd) FROM bq_billing GROUP BY project","timeout":30}',
@@ -553,7 +553,7 @@ INSERT INTO tool_call_history (call_id, session_id, tenant_id, tool_name, input_
  '{"rows_affected":1,"elapsed_ms":22}',
  'success', 22, NOW() - INTERVAL 9 HOUR + INTERVAL 30 MINUTE);
 
--- ent-B session sess-b-008 (5 calls: 1 success, 3 failed, 1 timeout)
+-- ent-B session sess-b-008 (5 calls: 1 success, 3 failed, 1 timeout);
 INSERT INTO tool_call_history (call_id, session_id, tenant_id, tool_name, input_params, output_result, status, latency_ms, called_at) VALUES
 ('call-b008-01','sess-b-008','ent-B','file_read',
  '{"path":"/workspace/src/main/java/App.java","encoding":"utf-8"}',
@@ -576,7 +576,7 @@ INSERT INTO tool_call_history (call_id, session_id, tenant_id, tool_name, input_
  '{"error":"upstream_timeout","retries":3}',
  'failed', 9100, NOW() - INTERVAL 6 HOUR + INTERVAL 15 MINUTE);
 
--- ent-B session sess-b-009 (5 calls: 5 success)
+-- ent-B session sess-b-009 (5 calls: 5 success);
 INSERT INTO tool_call_history (call_id, session_id, tenant_id, tool_name, input_params, output_result, status, latency_ms, called_at) VALUES
 ('call-b009-01','sess-b-009','ent-B','web_search',
  '{"query":"agentic AI orchestration frameworks LangChain AutoGen 2024"}',
@@ -599,7 +599,7 @@ INSERT INTO tool_call_history (call_id, session_id, tenant_id, tool_name, input_
  '{"size_bytes":204800,"pages":12}',
  'success', 95, NOW() - INTERVAL 2 HOUR + INTERVAL 30 MINUTE);
 
--- ent-B session sess-b-010 (5 calls: 4 success, 1 failed)
+-- ent-B session sess-b-010 (5 calls: 4 success, 1 failed);
 INSERT INTO tool_call_history (call_id, session_id, tenant_id, tool_name, input_params, output_result, status, latency_ms, called_at) VALUES
 ('call-b010-01','sess-b-010','ent-B','web_search',
  '{"query":"huggingface.co new model releases march 2026"}',

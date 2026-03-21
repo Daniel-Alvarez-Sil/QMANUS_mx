@@ -33,7 +33,7 @@ async def create_session(tenant_id: str, body: LaunchAgentRequest) -> JSONRespon
     matches the path `tenant_id` to avoid cross-tenant surprises.
     """
     auth_tenant = ctx_tenant.get()
-    if auth_tenant and auth_tenant != tenant_id:
+    if auth_tenant != tenant_id:
         raise HTTPException(status_code=401, detail={"error": "unauthorized", "code": "TENANT_MISMATCH"})
 
     session_id = str(uuid.uuid4())

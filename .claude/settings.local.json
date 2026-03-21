@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python -c \"from app.app import app; print\\(''imports OK''\\)\")"
+      "Bash(python -c \"from app.app import app; print\\(''imports OK''\\)\")",
+      "Bash(ls /home/gio/Vscode-projects/QMANUS_mx/*.pem)"
     ]
   }
 }
