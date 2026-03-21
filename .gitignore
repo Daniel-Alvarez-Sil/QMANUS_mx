@@ -12,3 +12,9 @@ qwen_report_*.json
 venv/**/*
 venv/
 *.pem.env
+uvicorn.log
+*.log
+__pycache__/
+*.pyc
+.env.save
+Pasted Text.txt
