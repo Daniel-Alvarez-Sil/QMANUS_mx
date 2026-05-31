@@ -1,0 +1,260 @@
+<section class="module" id="module-3" style="background: var(--color-bg)">
+  <div class="module-content">
+
+    <!-- Screen 1: Hero -->
+    <div class="screen">
+      <div class="module-number">03</div>
+      <h1 class="module-title">The Security Vault</h1>
+      <p class="module-subtitle">How AgentNexus makes sure Company A can never see Company B's data — even on shared infrastructure</p>
+
+      <div class="callout callout-info animate-in" style="margin-top: var(--space-10)">
+        <div class="callout-icon">🔐</div>
+        <div>
+          Imagine a building with hundreds of safe deposit boxes. The bank employee can access the building, but each box requires the depositor&apos;s unique key. Even if you knew the box number, you couldn&apos;t open someone else&apos;s — and you&apos;d get a polite "not found" rather than a "forbidden" (so you don&apos;t even learn which boxes exist).
+          <br><br>
+          That&apos;s multi-tenant isolation. Let&apos;s see how AgentNexus builds it with three interlocking mechanisms.
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 2: JWT explained -->
+    <div class="screen">
+      <h2 class="screen-title">Layer 1: The wristband — JWT tokens</h2>
+      <p class="screen-subtitle">A <span class="tooltip" data-tip="JWT stands for JSON Web Token. It&apos;s a small string that carries identity claims (like tenant ID) and a cryptographic signature that proves those claims weren&apos;t tampered with. The server created it with a secret key — only the server can verify it.">JWT</span> is a tamper-proof identity badge. Once issued, it can&apos;t be forged or modified.</p>
+
+      <div class="card-grid" style="grid-template-columns: 1fr 1fr 1fr; margin-top: var(--space-8)">
+        <div class="feature-card animate-in" style="border-top: 3px solid #D4A843">
+          <div class="feature-icon" style="background: #FDF5E0; color: #D4A843">📋</div>
+          <h3>Header</h3>
+          <p>Says "this is a JWT, signed with HS256 (a type of cryptographic algorithm)."</p>
+          <code style="font-size: var(--text-xs); color: var(--color-text-muted)">{"alg": "HS256", "typ": "JWT"}</code>
+        </div>
+        <div class="feature-card animate-in" style="border-top: 3px solid var(--color-accent)">
+          <div class="feature-icon" style="background: var(--color-accent-light); color: var(--color-accent)">🏷️</div>
+          <h3>Payload</h3>
+          <p>Contains the actual claims — including <code>tid</code>, the tenant ID that was verified when the token was minted.</p>
+          <code style="font-size: var(--text-xs); color: var(--color-text-muted)">{"tid": "enterprise-A", "exp": ...}</code>
+        </div>
+        <div class="feature-card animate-in" style="border-top: 3px solid #2D8B55">
+          <div class="feature-icon" style="background: #E8F5EE; color: #2D8B55">✅</div>
+          <h3>Signature</h3>
+          <p>A cryptographic stamp using the server&apos;s secret key. If anyone changes the payload (e.g., swaps tenant ID), the signature breaks.</p>
+          <code style="font-size: var(--text-xs); color: var(--color-text-muted)">HMACSHA256(header.payload, secret)</code>
+        </div>
+      </div>
+
+      <div class="callout callout-aha animate-in" style="margin-top: var(--space-8)">
+        <div class="callout-icon">💡</div>
+        <div>
+          <strong>Why not just send the tenant ID in the request body?</strong> Because anyone could claim to be any tenant. A JWT is signed with a secret only the server knows. If you change "enterprise-A" to "enterprise-B" in the token, the signature fails verification — the tampering is detected.
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 3: Middleware code translation -->
+    <div class="screen">
+      <h2 class="screen-title">Layer 2: The checkpoint — tenant middleware</h2>
+      <p class="screen-subtitle">From <code>app/middleware.py</code> — this runs before every protected request.</p>
+
+      <div class="translation-block animate-in">
+        <div class="translation-code">
+          <span class="translation-label">CODE</span>
+          <pre><code><span class="code-line"><span class="code-keyword">async def</span> <span class="code-function">tenant_middleware</span>(request, call_next):</span>
+<span class="code-line">    <span class="code-keyword">if</span> request.method == <span class="code-string">"OPTIONS"</span> <span class="code-keyword">or</span> \</span>
+<span class="code-line">       request.url.path <span class="code-keyword">in</span> _EXEMPT_PATHS:</span>
+<span class="code-line">        <span class="code-keyword">return await</span> <span class="code-function">call_next</span>(request)</span>
+<span class="code-line">    tenant_header = request.headers.<span class="code-function">get</span>(<span class="code-string">"X-Tenant-ID"</span>)</span>
+<span class="code-line">    token = auth_header[<span class="code-function">len</span>(<span class="code-string">"Bearer "</span>):]</span>
+<span class="code-line">    payload = jwt.<span class="code-function">decode</span>(token, JWT_SECRET, ...)</span>
+<span class="code-line">    <span class="code-keyword">if</span> payload.<span class="code-function">get</span>(<span class="code-string">"tid"</span>) != tenant_header:</span>
+<span class="code-line">        <span class="code-keyword">return</span> <span class="code-function">_mismatch</span>()</span>
+<span class="code-line">    ctx_token = ctx_tenant.<span class="code-function">set</span>(tenant_header)</span>
+<span class="code-line">    <span class="code-keyword">try</span>:</span>
+<span class="code-line">        <span class="code-keyword">return await</span> <span class="code-function">call_next</span>(request)</span>
+<span class="code-line">    <span class="code-keyword">finally</span>:</span>
+<span class="code-line">        ctx_tenant.<span class="code-function">reset</span>(ctx_token)</span>
+</code></pre>
+        </div>
+        <div class="translation-english">
+          <span class="translation-label" style="position: relative; top: auto; right: auto; display: block; margin-bottom: var(--space-3)">PLAIN ENGLISH</span>
+          <div class="translation-lines">
+            <p class="tl">This security function wraps every request like a locked door.</p>
+            <p class="tl">If it&apos;s a browser preflight (OPTIONS) or a public route, skip the check.</p>
+            <p class="tl">(Public routes: /health, /docs, /auth/token.)</p>
+            <p class="tl">Read the X-Tenant-ID header the client sent.</p>
+            <p class="tl">Strip "Bearer " from the Authorization header to get the raw JWT.</p>
+            <p class="tl">Decode and verify the JWT using the server&apos;s secret key.</p>
+            <p class="tl">The JWT&apos;s "tid" claim MUST match the X-Tenant-ID header exactly.</p>
+            <p class="tl">If they don&apos;t match → return 401 and stop. Request dies here.</p>
+            <p class="tl">Write the verified tenant ID to the request-scoped context.</p>
+            <p class="tl">Let the request continue to the actual route handler.</p>
+            <p class="tl">Guaranteed cleanup: clear the context even if something throws an error.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 4: ContextVar explained -->
+    <div class="screen">
+      <h2 class="screen-title">Layer 3: The invisible thread — ContextVar</h2>
+      <p class="screen-subtitle">The secret weapon that makes multi-tenant async safe.</p>
+
+      <p class="screen-text">Python&apos;s <span class="tooltip" data-tip="ContextVar is a Python built-in that stores a value that is scoped to the current async task. Two requests running concurrently each get their own isolated copy of the variable — like thread-local storage, but for async code.">ContextVar</span> is like giving each concurrent request its own sticky note. Even if 100 requests are being handled simultaneously, each one reads its own private copy of <code>ctx_tenant</code>.</p>
+
+      <div class="card-grid" style="grid-template-columns: 1fr 1fr; margin-top: var(--space-8)">
+        <div class="feature-card animate-in" style="border-left: 4px solid var(--color-error)">
+          <div class="feature-icon" style="background: var(--color-error-light); color: var(--color-error)">❌</div>
+          <h3>The wrong way: a global variable</h3>
+          <pre style="font-size: var(--text-xs); margin-top: var(--space-2)"><code>current_tenant = "enterprise-A"
+# Request from B arrives...
+current_tenant = "enterprise-B"
+# Now request A reads "enterprise-B"!
+# 🔥 Data leak</code></pre>
+        </div>
+        <div class="feature-card animate-in" style="border-left: 4px solid var(--color-success)">
+          <div class="feature-icon" style="background: var(--color-success-light); color: var(--color-success)">✅</div>
+          <h3>The right way: ContextVar</h3>
+          <pre style="font-size: var(--text-xs); margin-top: var(--space-2)"><code>ctx_tenant = ContextVar("ctx_tenant")
+# Request A: ctx_tenant.set("enterprise-A")
+# Request B: ctx_tenant.set("enterprise-B")
+# A reads its own "enterprise-A" ✓
+# B reads its own "enterprise-B" ✓</code></pre>
+        </div>
+      </div>
+
+      <div class="callout callout-aha animate-in" style="margin-top: var(--space-8)">
+        <div class="callout-icon">💡</div>
+        <div>
+          <strong>The finally block in middleware is non-negotiable.</strong> <code>ctx_tenant.reset(ctx_token)</code> runs even if the request handler throws an exception. This ensures the context never leaks into the next request that reuses the same async task — a subtle bug that would be nearly impossible to catch in testing.
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 5: Why 404 instead of 403 -->
+    <div class="screen">
+      <h2 class="screen-title">The 404 trick: hiding what doesn't belong to you</h2>
+      <p class="screen-subtitle">A deliberate security choice that teaches a universal principle.</p>
+
+      <div class="card-grid" style="grid-template-columns: 1fr 1fr; margin-top: var(--space-8)">
+        <div class="feature-card animate-in" style="background: var(--color-error-light); border: 1px solid var(--color-error)">
+          <div class="feature-icon" style="background: white; color: var(--color-error)">403</div>
+          <h3>Forbidden (the risky response)</h3>
+          <p>"You exist, I know about you, but you can't access this." This tells an attacker that the session ID they guessed is <strong>real</strong> — now they know there's something there worth attacking.</p>
+        </div>
+        <div class="feature-card animate-in" style="background: var(--color-success-light); border: 1px solid var(--color-success)">
+          <div class="feature-icon" style="background: white; color: var(--color-success)">404</div>
+          <h3>Not Found (the safe response)</h3>
+          <p>"From your perspective, this doesn't exist." An attacker learns nothing — they can't tell if they guessed the ID correctly. This is called <span class="tooltip" data-tip="Security through obscurity means not revealing information that would help an attacker. Here, returning 404 instead of 403 prevents an attacker from confirming whether a session ID exists, making enumeration attacks useless.">security through obscurity</span> — the session might exist, but you have no evidence either way.</p>
+        </div>
+      </div>
+
+      <div class="translation-block animate-in" style="margin-top: var(--space-8)">
+        <div class="translation-code">
+          <span class="translation-label">CODE</span>
+          <pre><code><span class="code-line">await cur.<span class="code-function">execute</span>(</span>
+<span class="code-line">    <span class="code-string">"""SELECT ... FROM agent_sessions</span></span>
+<span class="code-line"><span class="code-string">    WHERE session_id = %s AND tenant_id = %s"""</span>,</span>
+<span class="code-line">    (session_id, tenant_id),</span>
+<span class="code-line">)</span>
+<span class="code-line">session_row = <span class="code-keyword">await</span> cur.<span class="code-function">fetchone</span>()</span>
+<span class="code-line"><span class="code-keyword">if</span> session_row <span class="code-keyword">is None</span>:</span>
+<span class="code-line">    <span class="code-keyword">raise</span> <span class="code-function">HTTPException</span>(status_code=<span class="code-number">404</span>, ...)</span>
+</code></pre>
+        </div>
+        <div class="translation-english">
+          <span class="translation-label" style="position: relative; top: auto; right: auto; display: block; margin-bottom: var(--space-3)">PLAIN ENGLISH</span>
+          <div class="translation-lines">
+            <p class="tl">Query the database for a session...</p>
+            <p class="tl">...but ONLY where BOTH the session_id AND tenant_id match.</p>
+            <p class="tl">The tenant ID comes from the verified JWT, not the request.</p>
+            <p class="tl">Get the result (or nothing, if no match).</p>
+            <p class="tl">If nothing was returned — session doesn&apos;t exist, OR it belongs to someone else.</p>
+            <p class="tl">Either way, the caller gets "not found" — no information leaked.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 6: Quiz -->
+    <div class="screen">
+      <h2 class="screen-title">Check your understanding</h2>
+      <p class="screen-subtitle">Apply what you learned about AgentNexus&apos;s security model.</p>
+
+      <div class="quiz-container" id="quiz-module3">
+        <div class="quiz-question-block"
+             data-correct="option-c"
+             data-explanation-right="Exactly! ctx_tenant.reset() runs in the finally block, which executes even if the route handler throws an exception. Without it, the ContextVar could retain a previous tenant&apos;s identity and leak into the next request."
+             data-explanation-wrong="Not quite — think about what happens if the route handler crashes mid-request. The finally block is the key insight here.">
+          <h3 class="quiz-question">A bug causes the route handler to throw an unexpected error mid-request. What protects other tenants from seeing leaked data?</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>The JWT signature verification would catch it</span>
+            </button>
+            <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>TiDB&apos;s row-level isolation in the database</span>
+            </button>
+            <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>The finally block in middleware that resets the ContextVar</span>
+            </button>
+            <button class="quiz-option" data-value="option-d" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>CORS headers prevent cross-tenant requests</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question-block"
+             data-correct="option-b"
+             data-explanation-right="Right! Returning 404 gives no information about whether the session exists. A 403 would confirm the session ID is valid — which is valuable information for an attacker trying to enumerate sessions."
+             data-explanation-wrong="Close — but think about what information 403 leaks versus what 404 leaks. The choice of status code is a deliberate security decision.">
+          <h3 class="quiz-question">Enterprise B tries to access a session belonging to Enterprise A by guessing the session_id. They get a 404. Why is this better than returning a 403?</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>It&apos;s just convention — 404 is what FastAPI returns by default</span>
+            </button>
+            <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>A 404 reveals nothing — they can&apos;t confirm the session ID even exists</span>
+            </button>
+            <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>404 is faster to process on the server side</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question-block"
+             data-correct="option-a"
+             data-explanation-right="Yes! The tenant ID comes from ctx_tenant.get(), which was set by the middleware after verifying the JWT. An attacker can&apos;t inject a different tenant ID via the request body because the code ignores the body for this purpose."
+             data-explanation-wrong="Consider: where does tenant_id come from in launch_agent? Trace the code path — it&apos;s not coming from the HTTP request body.">
+          <h3 class="quiz-question">You ask an AI to add a feature where a super-admin can launch agents on behalf of any tenant by passing tenant_id in the POST body. What&apos;s the security risk?</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>Any client could send any tenant_id and create sessions for tenants they don&apos;t own</span>
+            </button>
+            <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>The Pydantic model would reject the extra field automatically</span>
+            </button>
+            <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>No risk — the JWT still needs to be valid</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <button class="quiz-check-btn" onclick="checkQuiz('quiz-module3')">Check Answers</button>
+        <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module3')">Try Again</button>
+      </div>
+    </div>
+
+  </div>
+</section>

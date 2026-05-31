@@ -1,0 +1,1361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgentNexus: How AI Agents Actually Work</title>
+
+  <!-- Google Fonts: Bricolage Grotesque · DM Sans · JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400;1,9..40,500&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="styles.css">
+
+  <style>
+    :root {
+      --color-accent:       #2A7B9B;
+      --color-accent-hover: #1F6280;
+      --color-accent-light: #E4F2F7;
+      --color-accent-muted: #5A9DB8;
+    }
+  </style>
+
+  <script src="main.js" defer></script>
+</head>
+<body>
+
+  <nav class="nav" id="nav">
+    <div class="progress-bar" id="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+    <div class="nav-inner">
+      <span class="nav-title">AgentNexus: How AI Agents Actually Work</span>
+      <div class="nav-dots" id="nav-dots" role="tablist">
+        <button class="nav-dot" data-target="module-1" data-tooltip="Mission Control" role="tab" aria-label="Module 1: Mission Control"></button>
+        <button class="nav-dot" data-target="module-2" data-tooltip="The Cast of Characters" role="tab" aria-label="Module 2: The Cast of Characters"></button>
+        <button class="nav-dot" data-target="module-3" data-tooltip="The Security Vault" role="tab" aria-label="Module 3: The Security Vault"></button>
+        <button class="nav-dot" data-target="module-4" data-tooltip="The Memory Machine" role="tab" aria-label="Module 4: The Memory Machine"></button>
+        <button class="nav-dot" data-target="module-5" data-tooltip="The AI Watching the AI" role="tab" aria-label="Module 5: The AI Watching the AI"></button>
+      </div>
+    </div>
+  </nav>
+
+  <main id="main">
+    <!-- modules/*.html content is assembled here by build.sh -->
+<section class="module" id="module-1" style="background: var(--color-bg)">
+  <div class="module-content">
+
+    <!-- Screen 1: Hero -->
+    <div class="screen">
+      <div class="module-number">01</div>
+      <h1 class="module-title">Mission Control</h1>
+      <p class="module-subtitle">What AgentNexus does — and what happens the moment you launch an agent</p>
+
+      <div class="callout callout-info animate-in" style="margin-top: var(--space-10)">
+        <div class="callout-icon">🚀</div>
+        <div>
+          <strong>Built in 6 hours at a hackathon in Mexico City.</strong>
+          AgentNexus is a platform that lets multiple companies run
+          <span class="tooltip" data-tip="An AI agent is a program that can break a big goal into steps, use tools (like searching the web or running code), and keep working until it&apos;s done — without a human guiding each step.">AI agents</span>
+          simultaneously — completely isolated from each other — all on a single shared system.
+        </div>
+      </div>
+
+      <div class="card-grid" style="margin-top: var(--space-10)">
+        <div class="feature-card animate-in">
+          <div class="feature-icon" style="background: var(--color-accent-light); color: var(--color-accent)">🏢</div>
+          <h3>Multi-tenant</h3>
+          <p>Company A and Company B can both use the platform at the same time. They never see each other's data — it's like having separate apartments in the same building.</p>
+        </div>
+        <div class="feature-card animate-in">
+          <div class="feature-icon" style="background: #E8F5EE; color: #2D8B55">🤖</div>
+          <h3>AI Agents</h3>
+          <p>Each company launches agents that can run tools: search the web, execute code, query a database, call external APIs. The platform tracks every action.</p>
+        </div>
+        <div class="feature-card animate-in">
+          <div class="feature-icon" style="background: #FDF5E0; color: #D4A843">📊</div>
+          <h3>Real-time Analytics</h3>
+          <p>A meta-agent (powered by Qwen AI) watches all agent sessions and generates optimization recommendations — an AI monitoring other AIs.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 2: The Journey -->
+    <div class="screen">
+      <h2 class="screen-title">Imagine you're an enterprise launching your first agent</h2>
+      <p class="screen-subtitle">Here's the exact journey your request takes — from browser click to database record and back.</p>
+
+      <div class="flow-animation" data-steps='[
+        {"highlight":"flow-actor-1","label":"You open index.html in your browser, enter your Tenant ID and JWT token, then click Launch Agent"},
+        {"highlight":"flow-actor-1","label":"The browser sends an HTTP POST request to /api/v1/agents/launch with your task plan","packet":true,"from":"actor-1","to":"actor-2"},
+        {"highlight":"flow-actor-2","label":"The FastAPI backend intercepts the request — the tenant middleware runs first, checking your JWT token"},
+        {"highlight":"flow-actor-2","label":"If your JWT is valid and matches your Tenant ID, the request continues to the launch_agent function","packet":true,"from":"actor-2","to":"actor-3"},
+        {"highlight":"flow-actor-3","label":"TiDB Cloud stores the new agent session, stamped with your tenant_id so it can never leak to other tenants"},
+        {"highlight":"flow-actor-3","label":"The database returns the server timestamp — confirmation the session was saved","packet":true,"from":"actor-3","to":"actor-2"},
+        {"highlight":"flow-actor-2","label":"FastAPI packages the response: session_id, tenant_id, status: planning","packet":true,"from":"actor-2","to":"actor-1"},
+        {"highlight":"flow-actor-1","label":"Your dashboard shows the new agent session — ready to receive tool calls"}
+      ]'>
+        <div class="flow-actors">
+          <div class="flow-actor" id="flow-actor-1">
+            <div class="flow-actor-icon">🖥️</div>
+            <span>Browser</span>
+          </div>
+          <div class="flow-actor" id="flow-actor-2">
+            <div class="flow-actor-icon">⚡</div>
+            <span>FastAPI</span>
+          </div>
+          <div class="flow-actor" id="flow-actor-3">
+            <div class="flow-actor-icon">🗄️</div>
+            <span>TiDB Cloud</span>
+          </div>
+        </div>
+        <div class="flow-packet" id="flow-packet"></div>
+        <div class="flow-step-label" id="flow-label">Click "Next Step" to trace the journey</div>
+        <div class="flow-controls">
+          <button class="btn flow-next-btn">Next Step</button>
+          <button class="btn flow-reset-btn">Restart</button>
+          <span class="flow-progress"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 3: The API Surface -->
+    <div class="screen">
+      <h2 class="screen-title">The full menu of what AgentNexus can do</h2>
+      <p class="screen-subtitle">Every capability is exposed as an <span class="tooltip" data-tip="An API (Application Programming Interface) is a menu of actions a server offers. You make a request specifying what you want, and it responds with data or confirmation. It&apos;s how apps talk to each other.">API endpoint</span> — a specific URL you hit with a specific action.</p>
+
+      <div class="card-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr))">
+        <div class="pattern-card animate-in">
+          <div class="pattern-badge" style="background: var(--color-accent-light); color: var(--color-accent)">POST</div>
+          <h4>/api/v1/auth/token</h4>
+          <p>Mint a <span class="tooltip" data-tip="JWT (JSON Web Token) is a small, tamper-proof pass that proves your identity. Think of it as a wristband from a concert — the venue (server) stamped it, so anyone can verify it&apos;s real without calling the venue.">JWT token</span> for a tenant. Requires a provisioning secret — so only authorized admins can create tenants.</p>
+        </div>
+        <div class="pattern-card animate-in">
+          <div class="pattern-badge" style="background: var(--color-accent-light); color: var(--color-accent)">POST</div>
+          <h4>/api/v1/agents/launch</h4>
+          <p>Start a new agent session with a task plan and context. Returns a <code>session_id</code> — the unique ID you'll use for all future calls on this agent.</p>
+        </div>
+        <div class="pattern-card animate-in">
+          <div class="pattern-badge" style="background: #E8F5EE; color: #2D8B55">GET</div>
+          <h4>/api/v1/agents/{session_id}/state</h4>
+          <p>Inspect what an agent is doing — its current status and the last 5 tool calls it made. Cross-tenant requests return 404, not 403 (see Module 3 for why this matters).</p>
+        </div>
+        <div class="pattern-card animate-in">
+          <div class="pattern-badge" style="background: var(--color-accent-light); color: var(--color-accent)">POST</div>
+          <h4>/api/v1/agents/{session_id}/tools/call</h4>
+          <p>Execute a tool within an agent session. The platform records input, output, latency, and status — every action is logged for later analysis.</p>
+        </div>
+        <div class="pattern-card animate-in">
+          <div class="pattern-badge" style="background: #E8F5EE; color: #2D8B55">GET</div>
+          <h4>/api/{tenant_id}/insights</h4>
+          <p>Analytics dashboard: session counts, tool success rates, latency trends — powered by TiDB&apos;s columnar engine for fast aggregation without slowing down live traffic.</p>
+        </div>
+        <div class="pattern-card animate-in">
+          <div class="pattern-badge" style="background: #FDF5E0; color: #D4A843">GET</div>
+          <h4>/api/v1/meta-agent/report</h4>
+          <p>Qwen AI reads the last 24h of agent data and generates optimization recommendations. The AI that watches the AIs.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 4: Code Translation -->
+    <div class="screen">
+      <h2 class="screen-title">What "launching an agent" looks like in code</h2>
+      <p class="screen-subtitle">From <code>app/routes/agents.py</code> — the function that runs when you hit POST /api/v1/agents/launch.</p>
+
+      <div class="translation-block animate-in">
+        <div class="translation-code">
+          <span class="translation-label">CODE</span>
+          <pre><code><span class="code-line"><span class="code-keyword">async def</span> <span class="code-function">launch_agent</span>(body: LaunchAgentRequest):</span>
+<span class="code-line">    tenant_id  = ctx_tenant.<span class="code-function">get</span>()</span>
+<span class="code-line">    session_id = <span class="code-function">str</span>(uuid.<span class="code-function">uuid4</span>())</span>
+<span class="code-line">    conn = <span class="code-keyword">await</span> <span class="code-function">get_conn</span>(tenant_id)</span>
+<span class="code-line">    <span class="code-keyword">async with</span> conn.<span class="code-function">cursor</span>() <span class="code-keyword">as</span> cur:</span>
+<span class="code-line">        <span class="code-keyword">await</span> cur.<span class="code-function">execute</span>(</span>
+<span class="code-line">            <span class="code-string">"INSERT INTO agent_sessions ..."</span>,</span>
+<span class="code-line">            (session_id, tenant_id, body.agent_type, ...)</span>
+<span class="code-line">        )</span>
+<span class="code-line">    <span class="code-keyword">return</span> JSONResponse(status_code=<span class="code-number">201</span>, content={</span>
+<span class="code-line">        <span class="code-string">"session_id"</span>: session_id,</span>
+<span class="code-line">        <span class="code-string">"status"</span>: <span class="code-string">"planning"</span>,</span>
+<span class="code-line">    })</span>
+</code></pre>
+        </div>
+        <div class="translation-english">
+          <span class="translation-label" style="position: relative; top: auto; right: auto; display: block; margin-bottom: var(--space-3)">PLAIN ENGLISH</span>
+          <div class="translation-lines">
+            <p class="tl">This is the function that runs when you POST to /agents/launch.</p>
+            <p class="tl">Read the tenant ID from the request context — never trust user input for this.</p>
+            <p class="tl">Generate a random unique ID for this new agent session.</p>
+            <p class="tl">Get a database connection belonging to this tenant.</p>
+            <p class="tl">Open a cursor (a pen to write to the database)...</p>
+            <p class="tl">Write a new row to the agent_sessions table...</p>
+            <p class="tl">...inserting the session ID, tenant ID, and agent type.</p>
+            <p class="tl">Send back a "201 Created" response with the new session details.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout callout-aha animate-in" style="margin-top: var(--space-8)">
+        <div class="callout-icon">💡</div>
+        <div>
+          <strong>Aha! The tenant ID never comes from the user's request body.</strong>
+          It comes from <code>ctx_tenant.get()</code> — a verified value that was set by the middleware AFTER validating the JWT. This is a key security pattern: never let users claim their own identity in the body of a request.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+<section class="module" id="module-2" style="background: var(--color-bg-warm)">
+  <div class="module-content">
+
+    <!-- Screen 1: Hero -->
+    <div class="screen">
+      <div class="module-number">02</div>
+      <h1 class="module-title">The Cast of Characters</h1>
+      <p class="module-subtitle">Every actor in the system — what they do, and why each one exists</p>
+
+      <div class="callout callout-info animate-in" style="margin-top: var(--space-10)">
+        <div class="callout-icon">🎭</div>
+        <div>
+          Think of AgentNexus like a <strong>film production</strong>. There&apos;s a director who receives the script (FastAPI), a continuity supervisor who tracks everything that happened (TiDB), a bouncer who checks badges (JWT middleware), a star AI model brought in for special scenes (Qwen), and a producer who keeps the whole operation running (the connection pool manager). Each has exactly one job.
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 2: Visual file tree + actor map -->
+    <div class="screen">
+      <h2 class="screen-title">Meet the files — and what each one is responsible for</h2>
+      <p class="screen-subtitle">AgentNexus follows a clean separation of concerns. Every file has exactly one job.</p>
+
+      <div class="arch-diagram animate-in" style="margin-top: var(--space-8)">
+        <div class="arch-zone" style="border-color: var(--color-accent)">
+          <h4 class="arch-zone-label" style="color: var(--color-accent)">Entry Point</h4>
+          <div class="arch-component" data-desc="main.py — The front door. Imports the FastAPI app and hands it to Uvicorn (the web server). One line: from app.app import app." onclick="showArchDesc(this)">
+            <div class="arch-icon">🚪</div>
+            <span>main.py</span>
+          </div>
+        </div>
+        <div class="arch-zone" style="border-color: #7B6DAA">
+          <h4 class="arch-zone-label" style="color: #7B6DAA">Application Layer</h4>
+          <div class="arch-component" data-desc="app/app.py — The wiring file. Attaches middleware and routes to the FastAPI instance. Nothing else. If it&apos;s not wiring, it doesn&apos;t belong here." onclick="showArchDesc(this)">
+            <div class="arch-icon">🔌</div>
+            <span>app/app.py</span>
+          </div>
+          <div class="arch-component" data-desc="app/middleware.py — The security checkpoint. Runs before EVERY request. Validates the JWT token and extracts the tenant identity. If it fails, returns 401 and the request dies here." onclick="showArchDesc(this)">
+            <div class="arch-icon">🛡️</div>
+            <span>app/middleware.py</span>
+          </div>
+          <div class="arch-component" data-desc="app/context.py — The shared whiteboard. Stores the current tenant_id in a ContextVar — a Python special variable that is scoped to a single async request, so two concurrent requests never mix up each other&apos;s tenant." onclick="showArchDesc(this)">
+            <div class="arch-icon">📋</div>
+            <span>app/context.py</span>
+          </div>
+        </div>
+        <div class="arch-zone" style="border-color: #2D8B55">
+          <h4 class="arch-zone-label" style="color: #2D8B55">Routes</h4>
+          <div class="arch-component" data-desc="app/routes/agents.py — The core product. Three endpoints: launch an agent, call a tool, get agent state. All scoped to the authenticated tenant." onclick="showArchDesc(this)">
+            <div class="arch-icon">🤖</div>
+            <span>routes/agents.py</span>
+          </div>
+          <div class="arch-component" data-desc="app/routes/meta_agent.py — The observer. Queries 24h of data from TiFlash (TiDB&apos;s fast analytics engine), sends a summary to Qwen, and returns AI-generated optimization recommendations." onclick="showArchDesc(this)">
+            <div class="arch-icon">🔭</div>
+            <span>routes/meta_agent.py</span>
+          </div>
+          <div class="arch-component" data-desc="app/routes/insights.py — The dashboard data engine. Runs complex SQL GROUP BY queries across agent_sessions and tool_call_history to power the analytics UI." onclick="showArchDesc(this)">
+            <div class="arch-icon">📊</div>
+            <span>routes/insights.py</span>
+          </div>
+          <div class="arch-component" data-desc="app/routes/auth.py — Token vending machine. Accepts a provisioning secret and tenant ID, mints a JWT, returns it. Requires no existing JWT to call (it&apos;s exempt from middleware)." onclick="showArchDesc(this)">
+            <div class="arch-icon">🎫</div>
+            <span>routes/auth.py</span>
+          </div>
+        </div>
+        <div class="arch-zone" style="border-color: #D4A843">
+          <h4 class="arch-zone-label" style="color: #D4A843">Data Layer</h4>
+          <div class="arch-component" data-desc="app/db.py — The connection pool manager. Creates and maintains a dedicated pool of database connections per tenant. Lazy initialization: the pool is only created when the first request for that tenant arrives." onclick="showArchDesc(this)">
+            <div class="arch-icon">🏊</div>
+            <span>app/db.py</span>
+          </div>
+          <div class="arch-component" data-desc="app/models.py — The contract enforcer. Pydantic models that validate every incoming request. If agent_type is not in {research, codegen, data, web}, it rejects the request before any code runs." onclick="showArchDesc(this)">
+            <div class="arch-icon">📝</div>
+            <span>app/models.py</span>
+          </div>
+          <div class="arch-component" data-desc="schema.sql — The database blueprint. Defines the tables: agent_sessions (one row per agent) and tool_call_history (one row per tool invocation). Also includes TiFlash replica hints for analytics." onclick="showArchDesc(this)">
+            <div class="arch-icon">🗄️</div>
+            <span>schema.sql</span>
+          </div>
+        </div>
+        <div class="arch-description" id="arch-desc">Click any component to learn what it does</div>
+      </div>
+    </div>
+
+    <!-- Screen 3: Group Chat — components introducing themselves -->
+    <div class="screen">
+      <h2 class="screen-title">The components introduce themselves</h2>
+      <p class="screen-subtitle">Imagine the key pieces of AgentNexus in a team standup...</p>
+
+      <div class="chat-window" id="chat-module2">
+        <div class="chat-messages">
+          <div class="chat-message" data-msg="0" data-sender="fastapi" style="display:none">
+            <div class="chat-avatar" style="background: var(--color-actor-1)">F</div>
+            <div class="chat-bubble">
+              <span class="chat-sender" style="color: var(--color-actor-1)">FastAPI</span>
+              <p>Hey team. I&apos;m the web framework. Every HTTP request comes through me. I route it to the right function and send back the response. I also generate the interactive docs at /docs automatically.</p>
+            </div>
+          </div>
+          <div class="chat-message" data-msg="1" data-sender="middleware" style="display:none">
+            <div class="chat-avatar" style="background: var(--color-actor-3)">M</div>
+            <div class="chat-bubble">
+              <span class="chat-sender" style="color: var(--color-actor-3)">Middleware</span>
+              <p>I run before FastAPI even sees the request. I check the JWT token, verify the tenant ID matches, and write the tenant identity to a shared context. If anything&apos;s wrong, I return 401 and the request never reaches any route.</p>
+            </div>
+          </div>
+          <div class="chat-message" data-msg="2" data-sender="fastapi" style="display:none">
+            <div class="chat-avatar" style="background: var(--color-actor-1)">F</div>
+            <div class="chat-bubble">
+              <span class="chat-sender" style="color: var(--color-actor-1)">FastAPI</span>
+              <p>Wait — so the CORS middleware runs AFTER you?</p>
+            </div>
+          </div>
+          <div class="chat-message" data-msg="3" data-sender="middleware" style="display:none">
+            <div class="chat-avatar" style="background: var(--color-actor-3)">M</div>
+            <div class="chat-bubble">
+              <span class="chat-sender" style="color: var(--color-actor-3)">Middleware</span>
+              <p>Exactly. Middleware layers wrap each other like an onion. CORS is the outermost layer — it runs first on the way IN so even 401 responses get the right CORS headers. I&apos;m the inner layer, running after CORS is satisfied.</p>
+            </div>
+          </div>
+          <div class="chat-message" data-msg="4" data-sender="tidb" style="display:none">
+            <div class="chat-avatar" style="background: var(--color-actor-2)">T</div>
+            <div class="chat-bubble">
+              <span class="chat-sender" style="color: var(--color-actor-2)">TiDB Cloud</span>
+              <p>I&apos;m the database. But I&apos;m not just any database — I&apos;m an HTAP database. I can handle your live agent session writes (OLTP) AND run heavy analytics queries (OLAP) at the same time without one slowing the other. The secret is TiFlash — a columnar copy of the data optimized for aggregation.</p>
+            </div>
+          </div>
+          <div class="chat-message" data-msg="5" data-sender="pool" style="display:none">
+            <div class="chat-avatar" style="background: var(--color-actor-4)">P</div>
+            <div class="chat-bubble">
+              <span class="chat-sender" style="color: var(--color-actor-4)">Connection Pool</span>
+              <p>And I manage the connection to TiDB so we don&apos;t open a new connection on every single request — that would be incredibly slow. I keep 10 connections open per tenant, ready to go. When a request needs the database, it borrows one from me and returns it when done.</p>
+            </div>
+          </div>
+          <div class="chat-message" data-msg="6" data-sender="qwen" style="display:none">
+            <div class="chat-avatar" style="background: var(--color-actor-5)">Q</div>
+            <div class="chat-bubble">
+              <span class="chat-sender" style="color: var(--color-actor-5)">Qwen (via DashScope)</span>
+              <p>I&apos;m the only external AI in the system. I don&apos;t run the agents — I watch them. The meta-agent collects 24 hours of execution data and sends it to me. I analyze it and return JSON with failure patterns, optimization suggestions, and an efficiency score.</p>
+            </div>
+          </div>
+          <div class="chat-message" data-msg="7" data-sender="pydantic" style="display:none">
+            <div class="chat-avatar" style="background: var(--color-actor-1)">V</div>
+            <div class="chat-bubble">
+              <span class="chat-sender" style="color: var(--color-actor-1)">Pydantic (Models)</span>
+              <p>I&apos;m the bouncer for request data. Before any route function runs, I check that the body has the right shape. If you send agent_type: &quot;hacker&quot;, I reject it immediately — only research, codegen, data, and web are allowed. No if-statements needed in the route code.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="chat-typing" id="chat-module2-typing" style="display:none">
+          <div class="chat-avatar" id="chat-module2-typing-avatar">?</div>
+          <div class="chat-typing-dots">
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
+          </div>
+        </div>
+
+        <div class="chat-controls">
+          <button class="btn chat-next-btn">Next Message</button>
+          <button class="btn chat-all-btn">Play All</button>
+          <button class="btn chat-reset-btn">Replay</button>
+          <span class="chat-progress"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 4: The connection pool code translation -->
+    <div class="screen">
+      <h2 class="screen-title">The clever trick: one database pool per tenant</h2>
+      <p class="screen-subtitle">From <code>app/db.py</code> — a pattern called <span class="tooltip" data-tip="Double-checked locking is a pattern that avoids the slow path (acquiring a lock) when the thing you&apos;re protecting already exists. Check once without a lock. If it&apos;s there, done. If not, acquire the lock, check again (because someone else might have created it while you waited), then create it.">double-checked locking</span>.</p>
+
+      <div class="translation-block animate-in">
+        <div class="translation-code">
+          <span class="translation-label">CODE</span>
+          <pre><code><span class="code-line"><span class="code-keyword">async def</span> <span class="code-function">_get_or_create_pool</span>(tenant_id):</span>
+<span class="code-line">    <span class="code-keyword">if</span> tenant_id <span class="code-keyword">in</span> pools:</span>
+<span class="code-line">        <span class="code-keyword">return</span> pools[tenant_id]</span>
+<span class="code-line">    lock = <span class="code-keyword">await</span> <span class="code-function">_pool_lock</span>(tenant_id)</span>
+<span class="code-line">    <span class="code-keyword">async with</span> lock:</span>
+<span class="code-line">        <span class="code-keyword">if</span> tenant_id <span class="code-keyword">not in</span> pools:</span>
+<span class="code-line">            pool = <span class="code-keyword">await</span> aiomysql.<span class="code-function">create_pool</span>(</span>
+<span class="code-line">                host=TIDB_HOST, maxsize=<span class="code-number">10</span>, ...)</span>
+<span class="code-line">            pools[tenant_id] = pool</span>
+<span class="code-line">    <span class="code-keyword">return</span> pools[tenant_id]</span>
+</code></pre>
+        </div>
+        <div class="translation-english">
+          <span class="translation-label" style="position: relative; top: auto; right: auto; display: block; margin-bottom: var(--space-3)">PLAIN ENGLISH</span>
+          <div class="translation-lines">
+            <p class="tl">Function: give me a database connection pool for this tenant.</p>
+            <p class="tl">Fast path: if the pool already exists, return it immediately (no locking needed).</p>
+            <p class="tl">We&apos;re done — 99% of requests exit here.</p>
+            <p class="tl">Slow path: get a lock that&apos;s specific to this tenant (not a global lock!).</p>
+            <p class="tl">Hold the lock while we do the creation...</p>
+            <p class="tl">Check AGAIN — maybe another request created it while we were waiting.</p>
+            <p class="tl">Actually create the connection pool (max 10 connections)...</p>
+            <p class="tl">...and save it so future requests hit the fast path.</p>
+            <p class="tl">Return the pool (whether we just created it or found it already existing).</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout callout-aha animate-in" style="margin-top: var(--space-8)">
+        <div class="callout-icon">💡</div>
+        <div>
+          <strong>Why per-tenant pools?</strong> If two tenants shared a pool, a heavy request from Company A could starve Company B&apos;s requests of database connections. Separate pools give each tenant guaranteed capacity — and make it impossible for one tenant to accidentally affect another&apos;s performance.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+<section class="module" id="module-3" style="background: var(--color-bg)">
+  <div class="module-content">
+
+    <!-- Screen 1: Hero -->
+    <div class="screen">
+      <div class="module-number">03</div>
+      <h1 class="module-title">The Security Vault</h1>
+      <p class="module-subtitle">How AgentNexus makes sure Company A can never see Company B's data — even on shared infrastructure</p>
+
+      <div class="callout callout-info animate-in" style="margin-top: var(--space-10)">
+        <div class="callout-icon">🔐</div>
+        <div>
+          Imagine a building with hundreds of safe deposit boxes. The bank employee can access the building, but each box requires the depositor&apos;s unique key. Even if you knew the box number, you couldn&apos;t open someone else&apos;s — and you&apos;d get a polite "not found" rather than a "forbidden" (so you don&apos;t even learn which boxes exist).
+          <br><br>
+          That&apos;s multi-tenant isolation. Let&apos;s see how AgentNexus builds it with three interlocking mechanisms.
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 2: JWT explained -->
+    <div class="screen">
+      <h2 class="screen-title">Layer 1: The wristband — JWT tokens</h2>
+      <p class="screen-subtitle">A <span class="tooltip" data-tip="JWT stands for JSON Web Token. It&apos;s a small string that carries identity claims (like tenant ID) and a cryptographic signature that proves those claims weren&apos;t tampered with. The server created it with a secret key — only the server can verify it.">JWT</span> is a tamper-proof identity badge. Once issued, it can&apos;t be forged or modified.</p>
+
+      <div class="card-grid" style="grid-template-columns: 1fr 1fr 1fr; margin-top: var(--space-8)">
+        <div class="feature-card animate-in" style="border-top: 3px solid #D4A843">
+          <div class="feature-icon" style="background: #FDF5E0; color: #D4A843">📋</div>
+          <h3>Header</h3>
+          <p>Says "this is a JWT, signed with HS256 (a type of cryptographic algorithm)."</p>
+          <code style="font-size: var(--text-xs); color: var(--color-text-muted)">{"alg": "HS256", "typ": "JWT"}</code>
+        </div>
+        <div class="feature-card animate-in" style="border-top: 3px solid var(--color-accent)">
+          <div class="feature-icon" style="background: var(--color-accent-light); color: var(--color-accent)">🏷️</div>
+          <h3>Payload</h3>
+          <p>Contains the actual claims — including <code>tid</code>, the tenant ID that was verified when the token was minted.</p>
+          <code style="font-size: var(--text-xs); color: var(--color-text-muted)">{"tid": "enterprise-A", "exp": ...}</code>
+        </div>
+        <div class="feature-card animate-in" style="border-top: 3px solid #2D8B55">
+          <div class="feature-icon" style="background: #E8F5EE; color: #2D8B55">✅</div>
+          <h3>Signature</h3>
+          <p>A cryptographic stamp using the server&apos;s secret key. If anyone changes the payload (e.g., swaps tenant ID), the signature breaks.</p>
+          <code style="font-size: var(--text-xs); color: var(--color-text-muted)">HMACSHA256(header.payload, secret)</code>
+        </div>
+      </div>
+
+      <div class="callout callout-aha animate-in" style="margin-top: var(--space-8)">
+        <div class="callout-icon">💡</div>
+        <div>
+          <strong>Why not just send the tenant ID in the request body?</strong> Because anyone could claim to be any tenant. A JWT is signed with a secret only the server knows. If you change "enterprise-A" to "enterprise-B" in the token, the signature fails verification — the tampering is detected.
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 3: Middleware code translation -->
+    <div class="screen">
+      <h2 class="screen-title">Layer 2: The checkpoint — tenant middleware</h2>
+      <p class="screen-subtitle">From <code>app/middleware.py</code> — this runs before every protected request.</p>
+
+      <div class="translation-block animate-in">
+        <div class="translation-code">
+          <span class="translation-label">CODE</span>
+          <pre><code><span class="code-line"><span class="code-keyword">async def</span> <span class="code-function">tenant_middleware</span>(request, call_next):</span>
+<span class="code-line">    <span class="code-keyword">if</span> request.method == <span class="code-string">"OPTIONS"</span> <span class="code-keyword">or</span> \</span>
+<span class="code-line">       request.url.path <span class="code-keyword">in</span> _EXEMPT_PATHS:</span>
+<span class="code-line">        <span class="code-keyword">return await</span> <span class="code-function">call_next</span>(request)</span>
+<span class="code-line">    tenant_header = request.headers.<span class="code-function">get</span>(<span class="code-string">"X-Tenant-ID"</span>)</span>
+<span class="code-line">    token = auth_header[<span class="code-function">len</span>(<span class="code-string">"Bearer "</span>):]</span>
+<span class="code-line">    payload = jwt.<span class="code-function">decode</span>(token, JWT_SECRET, ...)</span>
+<span class="code-line">    <span class="code-keyword">if</span> payload.<span class="code-function">get</span>(<span class="code-string">"tid"</span>) != tenant_header:</span>
+<span class="code-line">        <span class="code-keyword">return</span> <span class="code-function">_mismatch</span>()</span>
+<span class="code-line">    ctx_token = ctx_tenant.<span class="code-function">set</span>(tenant_header)</span>
+<span class="code-line">    <span class="code-keyword">try</span>:</span>
+<span class="code-line">        <span class="code-keyword">return await</span> <span class="code-function">call_next</span>(request)</span>
+<span class="code-line">    <span class="code-keyword">finally</span>:</span>
+<span class="code-line">        ctx_tenant.<span class="code-function">reset</span>(ctx_token)</span>
+</code></pre>
+        </div>
+        <div class="translation-english">
+          <span class="translation-label" style="position: relative; top: auto; right: auto; display: block; margin-bottom: var(--space-3)">PLAIN ENGLISH</span>
+          <div class="translation-lines">
+            <p class="tl">This security function wraps every request like a locked door.</p>
+            <p class="tl">If it&apos;s a browser preflight (OPTIONS) or a public route, skip the check.</p>
+            <p class="tl">(Public routes: /health, /docs, /auth/token.)</p>
+            <p class="tl">Read the X-Tenant-ID header the client sent.</p>
+            <p class="tl">Strip "Bearer " from the Authorization header to get the raw JWT.</p>
+            <p class="tl">Decode and verify the JWT using the server&apos;s secret key.</p>
+            <p class="tl">The JWT&apos;s "tid" claim MUST match the X-Tenant-ID header exactly.</p>
+            <p class="tl">If they don&apos;t match → return 401 and stop. Request dies here.</p>
+            <p class="tl">Write the verified tenant ID to the request-scoped context.</p>
+            <p class="tl">Let the request continue to the actual route handler.</p>
+            <p class="tl">Guaranteed cleanup: clear the context even if something throws an error.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 4: ContextVar explained -->
+    <div class="screen">
+      <h2 class="screen-title">Layer 3: The invisible thread — ContextVar</h2>
+      <p class="screen-subtitle">The secret weapon that makes multi-tenant async safe.</p>
+
+      <p class="screen-text">Python&apos;s <span class="tooltip" data-tip="ContextVar is a Python built-in that stores a value that is scoped to the current async task. Two requests running concurrently each get their own isolated copy of the variable — like thread-local storage, but for async code.">ContextVar</span> is like giving each concurrent request its own sticky note. Even if 100 requests are being handled simultaneously, each one reads its own private copy of <code>ctx_tenant</code>.</p>
+
+      <div class="card-grid" style="grid-template-columns: 1fr 1fr; margin-top: var(--space-8)">
+        <div class="feature-card animate-in" style="border-left: 4px solid var(--color-error)">
+          <div class="feature-icon" style="background: var(--color-error-light); color: var(--color-error)">❌</div>
+          <h3>The wrong way: a global variable</h3>
+          <pre style="font-size: var(--text-xs); margin-top: var(--space-2)"><code>current_tenant = "enterprise-A"
+# Request from B arrives...
+current_tenant = "enterprise-B"
+# Now request A reads "enterprise-B"!
+# 🔥 Data leak</code></pre>
+        </div>
+        <div class="feature-card animate-in" style="border-left: 4px solid var(--color-success)">
+          <div class="feature-icon" style="background: var(--color-success-light); color: var(--color-success)">✅</div>
+          <h3>The right way: ContextVar</h3>
+          <pre style="font-size: var(--text-xs); margin-top: var(--space-2)"><code>ctx_tenant = ContextVar("ctx_tenant")
+# Request A: ctx_tenant.set("enterprise-A")
+# Request B: ctx_tenant.set("enterprise-B")
+# A reads its own "enterprise-A" ✓
+# B reads its own "enterprise-B" ✓</code></pre>
+        </div>
+      </div>
+
+      <div class="callout callout-aha animate-in" style="margin-top: var(--space-8)">
+        <div class="callout-icon">💡</div>
+        <div>
+          <strong>The finally block in middleware is non-negotiable.</strong> <code>ctx_tenant.reset(ctx_token)</code> runs even if the request handler throws an exception. This ensures the context never leaks into the next request that reuses the same async task — a subtle bug that would be nearly impossible to catch in testing.
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 5: Why 404 instead of 403 -->
+    <div class="screen">
+      <h2 class="screen-title">The 404 trick: hiding what doesn't belong to you</h2>
+      <p class="screen-subtitle">A deliberate security choice that teaches a universal principle.</p>
+
+      <div class="card-grid" style="grid-template-columns: 1fr 1fr; margin-top: var(--space-8)">
+        <div class="feature-card animate-in" style="background: var(--color-error-light); border: 1px solid var(--color-error)">
+          <div class="feature-icon" style="background: white; color: var(--color-error)">403</div>
+          <h3>Forbidden (the risky response)</h3>
+          <p>"You exist, I know about you, but you can't access this." This tells an attacker that the session ID they guessed is <strong>real</strong> — now they know there's something there worth attacking.</p>
+        </div>
+        <div class="feature-card animate-in" style="background: var(--color-success-light); border: 1px solid var(--color-success)">
+          <div class="feature-icon" style="background: white; color: var(--color-success)">404</div>
+          <h3>Not Found (the safe response)</h3>
+          <p>"From your perspective, this doesn't exist." An attacker learns nothing — they can't tell if they guessed the ID correctly. This is called <span class="tooltip" data-tip="Security through obscurity means not revealing information that would help an attacker. Here, returning 404 instead of 403 prevents an attacker from confirming whether a session ID exists, making enumeration attacks useless.">security through obscurity</span> — the session might exist, but you have no evidence either way.</p>
+        </div>
+      </div>
+
+      <div class="translation-block animate-in" style="margin-top: var(--space-8)">
+        <div class="translation-code">
+          <span class="translation-label">CODE</span>
+          <pre><code><span class="code-line">await cur.<span class="code-function">execute</span>(</span>
+<span class="code-line">    <span class="code-string">"""SELECT ... FROM agent_sessions</span></span>
+<span class="code-line"><span class="code-string">    WHERE session_id = %s AND tenant_id = %s"""</span>,</span>
+<span class="code-line">    (session_id, tenant_id),</span>
+<span class="code-line">)</span>
+<span class="code-line">session_row = <span class="code-keyword">await</span> cur.<span class="code-function">fetchone</span>()</span>
+<span class="code-line"><span class="code-keyword">if</span> session_row <span class="code-keyword">is None</span>:</span>
+<span class="code-line">    <span class="code-keyword">raise</span> <span class="code-function">HTTPException</span>(status_code=<span class="code-number">404</span>, ...)</span>
+</code></pre>
+        </div>
+        <div class="translation-english">
+          <span class="translation-label" style="position: relative; top: auto; right: auto; display: block; margin-bottom: var(--space-3)">PLAIN ENGLISH</span>
+          <div class="translation-lines">
+            <p class="tl">Query the database for a session...</p>
+            <p class="tl">...but ONLY where BOTH the session_id AND tenant_id match.</p>
+            <p class="tl">The tenant ID comes from the verified JWT, not the request.</p>
+            <p class="tl">Get the result (or nothing, if no match).</p>
+            <p class="tl">If nothing was returned — session doesn&apos;t exist, OR it belongs to someone else.</p>
+            <p class="tl">Either way, the caller gets "not found" — no information leaked.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 6: Quiz -->
+    <div class="screen">
+      <h2 class="screen-title">Check your understanding</h2>
+      <p class="screen-subtitle">Apply what you learned about AgentNexus&apos;s security model.</p>
+
+      <div class="quiz-container" id="quiz-module3">
+        <div class="quiz-question-block"
+             data-correct="option-c"
+             data-explanation-right="Exactly! ctx_tenant.reset() runs in the finally block, which executes even if the route handler throws an exception. Without it, the ContextVar could retain a previous tenant&apos;s identity and leak into the next request."
+             data-explanation-wrong="Not quite — think about what happens if the route handler crashes mid-request. The finally block is the key insight here.">
+          <h3 class="quiz-question">A bug causes the route handler to throw an unexpected error mid-request. What protects other tenants from seeing leaked data?</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>The JWT signature verification would catch it</span>
+            </button>
+            <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>TiDB&apos;s row-level isolation in the database</span>
+            </button>
+            <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>The finally block in middleware that resets the ContextVar</span>
+            </button>
+            <button class="quiz-option" data-value="option-d" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>CORS headers prevent cross-tenant requests</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question-block"
+             data-correct="option-b"
+             data-explanation-right="Right! Returning 404 gives no information about whether the session exists. A 403 would confirm the session ID is valid — which is valuable information for an attacker trying to enumerate sessions."
+             data-explanation-wrong="Close — but think about what information 403 leaks versus what 404 leaks. The choice of status code is a deliberate security decision.">
+          <h3 class="quiz-question">Enterprise B tries to access a session belonging to Enterprise A by guessing the session_id. They get a 404. Why is this better than returning a 403?</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>It&apos;s just convention — 404 is what FastAPI returns by default</span>
+            </button>
+            <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>A 404 reveals nothing — they can&apos;t confirm the session ID even exists</span>
+            </button>
+            <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>404 is faster to process on the server side</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question-block"
+             data-correct="option-a"
+             data-explanation-right="Yes! The tenant ID comes from ctx_tenant.get(), which was set by the middleware after verifying the JWT. An attacker can&apos;t inject a different tenant ID via the request body because the code ignores the body for this purpose."
+             data-explanation-wrong="Consider: where does tenant_id come from in launch_agent? Trace the code path — it&apos;s not coming from the HTTP request body.">
+          <h3 class="quiz-question">You ask an AI to add a feature where a super-admin can launch agents on behalf of any tenant by passing tenant_id in the POST body. What&apos;s the security risk?</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>Any client could send any tenant_id and create sessions for tenants they don&apos;t own</span>
+            </button>
+            <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>The Pydantic model would reject the extra field automatically</span>
+            </button>
+            <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>No risk — the JWT still needs to be valid</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <button class="quiz-check-btn" onclick="checkQuiz('quiz-module3')">Check Answers</button>
+        <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module3')">Try Again</button>
+      </div>
+    </div>
+
+  </div>
+</section>
+<section class="module" id="module-4" style="background: var(--color-bg-warm)">
+  <div class="module-content">
+
+    <!-- Screen 1: Hero -->
+    <div class="screen">
+      <div class="module-number">04</div>
+      <h1 class="module-title">The Memory Machine</h1>
+      <p class="module-subtitle">How AgentNexus stores, queries, and analyzes data across thousands of concurrent agent sessions</p>
+
+      <div class="callout callout-info animate-in" style="margin-top: var(--space-10)">
+        <div class="callout-icon">🧠</div>
+        <div>
+          Every agent session, every tool call, every result — it all lives in one place: TiDB. But this isn&apos;t just a database. It&apos;s a hybrid engine that does both transactions (OLTP) and analytics (OLAP) on the same data, without copying it anywhere.
+          <br><br>
+          Let&apos;s look at how the schema is built to make multi-tenant isolation natural and fast.
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 2: Schema design -->
+    <div class="screen">
+      <h2 class="screen-title">The schema — built for isolation from the ground up</h2>
+      <p class="screen-subtitle">Three core tables, each designed so tenant data stays separate by construction.</p>
+
+      <div class="arch-diagram animate-in" style="margin-top: var(--space-8)">
+        <div class="arch-diagram-inner">
+          <div class="arch-grid">
+            <div class="arch-component" data-desc="Tenants: The root of isolation. Each tenant has a unique tenant_id that flows through every other table. Partitioned by range for fast lookups.">
+              <div class="arch-icon">🏢</div>
+              <span>tenants</span>
+            </div>
+            <div class="arch-component" data-desc="Agent Sessions: Every agent run is a session. Composite primary key (tenant_id, session_id) means queries for 'my sessions' are physically co-located. Partitioned by tenant_id.">
+              <div class="arch-icon">🤖</div>
+              <span>agent_sessions</span>
+            </div>
+            <div class="arch-component" data-desc="Tool Call History: Every tool invocation is logged here. Composite key (tenant_id, session_id, call_id). Also has a TiFlash replica for analytical queries.">
+              <div class="arch-icon">🔧</div>
+              <span>tool_call_history</span>
+            </div>
+          </div>
+          <div class="arch-connections">
+            <div class="arch-arrow">tenant_id →</div>
+            <div class="arch-arrow">session_id + tenant_id →</div>
+          </div>
+        </div>
+        <p class="arch-description">Click any component to learn how it enforces tenant isolation.</p>
+      </div>
+
+      <div class="callout callout-aha animate-in" style="margin-top: var(--space-8)">
+        <div class="callout-icon">💡</div>
+        <div>
+          <strong>The key insight:</strong> <code>tenant_id</code> is the first column in every primary key. This isn&apos;t arbitrary — TiDB physically co-locates rows with the same tenant_id together on disk. When you query "give me all sessions for tenant X," the database doesn&apos;t scan the whole table. It goes straight to tenant X&apos;s region.
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 3: Composite primary key explained -->
+    <div class="screen">
+      <h2 class="screen-title">Why composite primary keys?</h2>
+      <p class="screen-subtitle">A design decision that makes isolation free, not bolted-on.</p>
+
+      <div class="card-grid" style="grid-template-columns: 1fr 1fr; margin-top: var(--space-8)">
+        <div class="feature-card animate-in" style="border-top: 3px solid var(--color-error)">
+          <div class="feature-icon" style="background: var(--color-error-light); color: var(--color-error)">⚠️</div>
+          <h3>Simple auto-increment ID</h3>
+          <pre style="font-size: var(--text-xs); margin-top: var(--space-2)"><code>PRIMARY KEY (id)
+INDEX (tenant_id)
+
+-- Query needs full index scan:
+SELECT * FROM sessions
+WHERE tenant_id = 'A'
+-- Scans ALL rows, filters by A
+-- 🔒 Works, but slow at scale</code></pre>
+          <p style="margin-top: var(--space-3); color: var(--color-error)">Every query must filter on tenant_id as a secondary index — extra work.</p>
+        </div>
+        <div class="feature-card animate-in" style="border-top: 3px solid var(--color-success)">
+          <div class="feature-icon" style="background: var(--color-success-light); color: var(--color-success)">✅</div>
+          <h3>Composite key (tenant_id, session_id)</h3>
+          <pre style="font-size: var(--text-xs); margin-top: var(--space-2)"><code>PRIMARY KEY (tenant_id, session_id)
+
+-- Query hits the clustered index directly:
+SELECT * FROM sessions
+WHERE tenant_id = 'A' AND session_id = 'x'
+-- Goes straight to tenant A's region
+-- ⚡ Fast by construction</code></pre>
+          <p style="margin-top: var(--space-3); color: var(--color-success)">tenant_id is baked into the primary key — isolation is physical, not just logical.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 4: Connection pooling -->
+    <div class="screen">
+      <h2 class="screen-title">Connection pooling — one pool per tenant</h2>
+      <p class="screen-subtitle">From <code>app/db.py</code> — the <span class="tooltip" data-tip="A connection pool is a cache of pre-established database connections. Creating a new TCP connection + SSL handshake is expensive (~50ms). A pool keeps connections warm and ready, cutting latency to ~1ms.">TiDBPoolManager</span> creates isolated pools.</p>
+
+      <div class="translation-block animate-in">
+        <div class="translation-code">
+          <span class="translation-label">CODE</span>
+          <pre><code><span class="code-line"><span class="code-keyword">class</span> <span class="code-function">TiDBPoolManager</span>:</span>
+<span class="code-line">    <span class="code-keyword">def</span> <span class="code-function">__init__</span>(self):</span>
+<span class="code-line">        self._pools: dict[str, Pool] = {}</span>
+<span class="code-line">        self._lock = asyncio.Lock()</span>
+<span class="code-line"></span>
+<span class="code-line">    <span class="code-keyword">async def</span> <span class="code-function">get_pool</span>(self, tenant_id):</span>
+<span class="code-line">        <span class="code-keyword">if</span> tenant_id <span class="code-keyword">in</span> self._pools:</span>
+<span class="code-line">            <span class="code-keyword">return</span> self._pools[tenant_id]</span>
+<span class="code-line">        <span class="code-keyword">async with</span> self._lock:</span>
+<span class="code-line">            <span class="code-keyword">if</span> tenant_id <span class="code-keyword">in</span> self._pools:</span>
+<span class="code-line">                <span class="code-keyword">return</span> self._pools[tenant_id]</span>
+<span class="code-line">            pool = <span class="code-keyword">await</span> aiomysql.create_pool(...)</span>
+<span class="code-line">            self._pools[tenant_id] = pool</span>
+<span class="code-line">            <span class="code-keyword">return</span> pool</span>
+</code></pre>
+        </div>
+        <div class="translation-english">
+          <span class="translation-label" style="position: relative; top: auto; right: auto; display: block; margin-bottom: var(--space-3)">PLAIN ENGLISH</span>
+          <div class="translation-lines">
+            <p class="tl">Each tenant gets their own connection pool (min 1, max 10 connections).</p>
+            <p class="tl">First request from tenant A → create pool A.</p>
+            <p class="tl">Second request from tenant A → reuse pool A (instant).</p>
+            <p class="tl">First request from tenant B → create pool B (separate).</p>
+            <p class="tl">The lock + double-check prevents two coroutines from creating duplicate pools during a race condition.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout callout-info animate-in" style="margin-top: var(--space-8)">
+        <div class="callout-icon">🔑</div>
+        <div>
+          <strong>Why per-tenant pools?</strong> This gives you visibility and control. You can see that tenant A is using 8/10 connections while tenant B is idle. You can rate-limit, quota, or even shut down one tenant&apos;s pool without affecting others. It&apos;s isolation at every layer.
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 5: TiFlash — the analytical engine -->
+    <div class="screen">
+      <h2 class="screen-title">TiFlash — analytics without slowing down transactions</h2>
+      <p class="screen-subtitle">The same data, two storage engines. Row-based for transactions, column-based for analytics.</p>
+
+      <div class="card-grid" style="grid-template-columns: 1fr 1fr; margin-top: var(--space-8)">
+        <div class="feature-card animate-in" style="border-left: 4px solid #2A7B9B">
+          <div class="feature-icon" style="background: var(--color-accent-light); color: var(--color-accent)">📝</div>
+          <h3>TiKV — Row Store (OLTP)</h3>
+          <p>Optimized for <strong>single-row operations</strong>:</p>
+          <ul style="margin-top: var(--space-2); padding-left: var(--space-4)">
+            <li>INSERT a new session</li>
+            <li>UPDATE tool call status</li>
+            <li>SELECT one session by ID</li>
+          </ul>
+          <p style="margin-top: var(--space-2); color: var(--color-text-muted)">Fast for point lookups and writes.</p>
+        </div>
+        <div class="feature-card animate-in" style="border-left: 4px solid #D4A843">
+          <div class="feature-icon" style="background: #FDF5E0; color: #D4A843">📊</div>
+          <h3>TiFlash — Column Store (OLAP)</h3>
+          <p>Optimized for <strong>scanning many rows</strong>:</p>
+          <ul style="margin-top: var(--space-2); padding-left: var(--space-4)">
+            <li>COUNT failures by agent type</li>
+            <li>AVG latency across 1000 sessions</li>
+            <li>GROUP BY tool_name, status</li>
+          </ul>
+          <p style="margin-top: var(--space-2); color: var(--color-text-muted)">Fast for analytics — reads only the columns it needs.</p>
+        </div>
+      </div>
+
+      <div class="translation-block animate-in" style="margin-top: var(--space-8)">
+        <div class="translation-code">
+          <span class="translation-label">CODE</span>
+          <pre><code><span class="code-line"><span class="code-keyword">async def</span> <span class="code-function">execute_tiflash</span>(tenant_id, sql, args):</span>
+<span class="code-line">    hint = <span class="code-string">"/*+ READ_FROM_STORAGE(tiflash[agent_sessions, tool_call_history]) */ "</span></span>
+<span class="code-line">    hint_sql = sql[:offset + <span class="code-number">6</span>] + <span class="code-string">" "</span> + hint + sql[offset + <span class="code-number">7</span>:]</span>
+<span class="code-line">    <span class="code-keyword">try</span>:</span>
+<span class="code-line">        <span class="code-keyword">return await</span> pool_manager.execute(tenant_id, hint_sql, args)</span>
+<span class="code-line">    <span class="code-keyword">except</span> Exception <span class="code-keyword">as</span> exc:</span>
+<span class="code-line">        <span class="code-comment"># TiFlash unavailable? Fall back to TiKV transparenty.</span></span>
+<span class="code-line">        <span class="code-keyword">return await</span> pool_manager.execute(tenant_id, sql, args)</span>
+</code></pre>
+        </div>
+        <div class="translation-english">
+          <span class="translation-label" style="position: relative; top: auto; right: auto; display: block; margin-bottom: var(--space-3)">PLAIN ENGLISH</span>
+          <div class="translation-lines">
+            <p class="tl">This helper wraps any SELECT with a TiFlash optimizer hint.</p>
+            <p class="tl">The hint tells TiDB: "use the columnar store for these tables."</p>
+            <p class="tl">The hint is injected into the SQL text after the SELECT keyword.</p>
+            <p class="tl">If TiFlash is ready → columnar speed.</p>
+            <p class="tl">If TiFlash isn&apos;t set up yet → transparently falls back to row store.</p>
+            <p class="tl">The caller never needs to handle the fallback — it just works.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 6: The execute pattern -->
+    <div class="screen">
+      <h2 class="screen-title">The execute pattern — clean, safe, tenant-scoped</h2>
+      <p class="screen-subtitle">Every database call in AgentNexus follows the same pattern.</p>
+
+      <div class="translation-block animate-in">
+        <div class="translation-code">
+          <span class="translation-label">CODE</span>
+          <pre><code><span class="code-line"><span class="code-keyword">async def</span> <span class="code-function">launch_agent</span>(body: LaunchAgentRequest):</span>
+<span class="code-line">    tenant_id  = ctx_tenant.<span class="code-function">get</span>()  <span class="code-comment"># from verified middleware</span></span>
+<span class="code-line">    session_id = str(uuid.<span class="code-function">uuid4</span>())</span>
+<span class="code-line">    conn = <span class="code-keyword">await</span> <span class="code-function">get_conn</span>(tenant_id)</span>
+<span class="code-line">    <span class="code-keyword">try</span>:</span>
+<span class="code-line">        <span class="code-keyword">async with</span> conn.<span class="code-function">cursor</span>() <span class="code-keyword">as</span> cur:</span>
+<span class="code-line">            <span class="code-keyword">await</span> cur.<span class="code-function">execute</span>(</span>
+<span class="code-line">                <span class="code-string">"INSERT INTO agent_sessions ..."</span>,</span>
+<span class="code-line">                (session_id, tenant_id, ...)</span>
+<span class="code-line">            )</span>
+<span class="code-line">    <span class="code-keyword">finally</span>:</span>
+<span class="code-line">        <span class="code-keyword">await</span> <span class="code-function">release_conn</span>(tenant_id, conn)</span>
+</code></pre>
+        </div>
+        <div class="translation-english">
+          <span class="translation-label" style="position: relative; top: auto; right: auto; display: block; margin-bottom: var(--space-3)">PLAIN ENGLISH</span>
+          <div class="translation-lines">
+            <p class="tl">Get the tenant ID from the verified context (set by middleware).</p>
+            <p class="tl">Generate a unique session ID.</p>
+            <p class="tl">Acquire a connection from this tenant&apos;s pool.</p>
+            <p class="tl">Execute the query with parameterized SQL (no string interpolation).</p>
+            <p class="tl">The INSERT includes tenant_id — so this row belongs to this tenant only.</p>
+            <p class="tl">Guaranteed cleanup: release the connection back to the pool.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout callout-aha animate-in" style="margin-top: var(--space-8)">
+        <div class="callout-icon">💡</div>
+        <div>
+          <strong>Notice: tenant_id is never taken from the request body.</strong> It flows from middleware → ContextVar → get_conn(). The request body can contain any tenant_id it wants — the code ignores it. This is called <span class="tooltip" data-tip="Trusted input means data that comes from a source the system controls, not from the user. Here, tenant_id comes from the verified JWT (server-created), not from the request body (user-controlled).">trusted source, not untrusted input</span>.
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 7: Quiz -->
+    <div class="screen">
+      <h2 class="screen-title">Check your understanding</h2>
+      <p class="screen-subtitle">Apply what you learned about the database layer.</p>
+
+      <div class="quiz-container" id="quiz-module4">
+        <div class="quiz-question-block"
+             data-correct="option-b"
+             data-explanation-right="Exactly! With PRIMARY KEY (tenant_id, session_id), TiDB physically co-locates rows by tenant. A query with WHERE tenant_id = 'A' goes directly to tenant A's region — it doesn't need to scan the entire table."
+             data-explanation-wrong="Think about how TiDB stores rows with a composite primary key. The first column determines physical placement on disk.">
+          <h3 class="quiz-question">Why does putting tenant_id first in the primary key make queries faster?</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>It creates a secondary index that&apos;s automatically cached</span>
+            </button>
+            <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>TiDB co-locates rows with the same tenant_id together — queries go straight to that region</span>
+            </button>
+            <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>It prevents other tenants&apos; rows from being written at the same time</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question-block"
+             data-correct="option-c"
+             data-explanation-right="Right! TiFlash is a columnar replica optimized for analytical queries (GROUP BY, AVG, COUNT across many rows). TiKV is the row store, better for single-row lookups and writes. The optimizer hint tells TiDB which engine to use."
+             data-explanation-wrong="Consider: what kind of query benefits from reading only specific columns instead of entire rows?">
+          <h3 class="quiz-question">What is TiFlash designed to do better than TiKV?</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>Handle more concurrent writes per second</span>
+            </button>
+            <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>Store encrypted data at rest</span>
+            </button>
+            <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>Run analytical queries that scan many rows efficiently</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question-block"
+             data-correct="option-a"
+             data-explanation-right="Yes! Each tenant gets their own pool of 1-10 connections. If tenant A is doing heavy work and uses all 10 connections, tenant B still has their own pool of 10 — completely unaffected. No noisy-neighbor problem."
+             data-explanation-wrong="Think about what 'per-tenant pool' means for resource isolation between tenants.">
+          <h3 class="quiz-question">Tenant A is running 50 concurrent agent sessions while Tenant B is idle. How does per-tenant connection pooling affect Tenant B?</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>Tenant B&apos;s pool is untouched — no contention with Tenant A</span>
+            </button>
+            <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>Tenant B&apos;s queries slow down because the database is busy with Tenant A</span>
+            </button>
+            <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>Tenant B&apos;s pool is automatically expanded to compensate</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <button class="quiz-check-btn" onclick="checkQuiz('quiz-module4')">Check Answers</button>
+        <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module4')">Try Again</button>
+      </div>
+    </div>
+
+  </div>
+</section>
+<section class="module" id="module-5" style="background: var(--color-bg)">
+  <div class="module-content">
+
+    <!-- Screen 1: Hero -->
+    <div class="screen">
+      <div class="module-number">05</div>
+      <h1 class="module-title">The AI Watching the AI</h1>
+      <p class="module-subtitle">How the meta-agent analyzes tool calls, finds failure patterns, and recommends optimizations — using AI itself</p>
+
+      <div class="callout callout-info animate-in" style="margin-top: var(--space-10)">
+        <div class="callout-icon">🔭</div>
+        <div>
+          AgentNexus doesn&apos;t just run agents — it watches them. A dedicated endpoint collects the last 24 hours of execution data, sends it to Qwen-Max for analysis, and returns actionable insights: which tools are failing, what patterns cause latency spikes, and how to fix them.
+          <br><br>
+          The system is self-aware. Let&apos;s see how.
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 2: Meta-agent endpoint -->
+    <div class="screen">
+      <h2 class="screen-title">The meta-agent report endpoint</h2>
+      <p class="screen-subtitle"><code>GET /api/v1/meta-agent/report</code> — one call, three steps.</p>
+
+      <div class="flow-animation animate-in"
+           data-steps='[
+             {"label": "Step 1: Query TiFlash for 24-hour execution stats", "highlight": "flow-tiflash", "from": "client", "to": "tiflash"},
+             {"label": "Step 2: Aggregate raw stats — agent types, tool names, statuses, latencies", "highlight": "flow-aggregate", "from": "tiflash", "to": "aggregate"},
+             {"label": "Step 3: Send summary to Qwen-Max for optimization analysis", "highlight": "flow-qwen", "from": "aggregate", "to": "qwen"},
+             {"label": "Step 4: Return combined report: raw_stats + qwen_analysis", "highlight": "flow-return", "from": "qwen", "to": "client"}
+           ]'>
+        <div class="flow-nodes">
+          <div class="flow-node" id="flow-client">
+            <div class="flow-node-icon">👤</div>
+            <div class="flow-node-label">Client</div>
+          </div>
+          <div class="flow-node" id="flow-tiflash">
+            <div class="flow-node-icon">📊</div>
+            <div class="flow-node-label">TiFlash</div>
+          </div>
+          <div class="flow-node" id="flow-aggregate">
+            <div class="flow-node-icon">⚙️</div>
+            <div class="flow-node-label">Aggregate</div>
+          </div>
+          <div class="flow-node" id="flow-qwen">
+            <div class="flow-node-icon">🧠</div>
+            <div class="flow-node-label">Qwen-Max</div>
+          </div>
+        </div>
+        <div class="flow-controls">
+          <div class="flow-step-label">Click "Next Step" to see the flow</div>
+          <div class="flow-progress">Step 0 / 4</div>
+          <div class="flow-buttons">
+            <button class="flow-next-btn">Next Step →</button>
+            <button class="flow-reset-btn">Reset</button>
+          </div>
+        </div>
+        <div class="flow-packet"></div>
+      </div>
+    </div>
+
+    <!-- Screen 3: The TiFlash query -->
+    <div class="screen">
+      <h2 class="screen-title">Step 1: The analytics query</h2>
+      <p class="screen-subtitle">A single query that joins sessions with tool calls, grouped by agent type, tool name, status, and latency.</p>
+
+      <div class="translation-block animate-in">
+        <div class="translation-code">
+          <span class="translation-label">CODE</span>
+          <pre><code><span class="code-line"><span class="code-keyword">SELECT</span></span>
+<span class="code-line">    s.agent_type,</span>
+<span class="code-line">    t.tool_name,</span>
+<span class="code-line">    t.status,</span>
+<span class="code-line">    t.latency_ms,</span>
+<span class="code-line">    <span class="code-function">COUNT</span>(*) <span class="code-keyword">AS</span> cnt</span>
+<span class="code-line"><span class="code-keyword">FROM</span>   agent_sessions s</span>
+<span class="code-line"><span class="code-keyword">JOIN</span>   tool_call_history t <span class="code-keyword">ON</span> s.session_id = t.session_id</span>
+<span class="code-line"><span class="code-keyword">WHERE</span>  s.tenant_id  = %s</span>
+<span class="code-line">  <span class="code-keyword">AND</span>  s.created_at > <span class="code-function">NOW</span>() - <span class="code-keyword">INTERVAL</span> <span class="code-number">24</span> <span class="code-keyword">HOUR</span></span>
+<span class="code-line"><span class="code-keyword">GROUP BY</span> s.agent_type, t.tool_name, t.status, t.latency_ms</span>
+</code></pre>
+        </div>
+        <div class="translation-english">
+          <span class="translation-label" style="position: relative; top: auto; right: auto; display: block; margin-bottom: var(--space-3)">PLAIN ENGLISH</span>
+          <div class="translation-lines">
+            <p class="tl">For each agent type (research, codegen, data, web)...</p>
+            <p class="tl">...and each tool used (web_search, code_exec, db_query, etc.)...</p>
+            <p class="tl">...count how many calls succeeded, failed, or timed out...</p>
+            <p class="tl">...along with their latency in milliseconds.</p>
+            <p class="tl">Only for this tenant (from the verified JWT context).</p>
+            <p class="tl">Only for sessions created in the last 24 hours.</p>
+            <p class="tl">Grouped so you can spot patterns: "web_search fails 15% of the time after 22:00 UTC."</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 4: Qwen analysis -->
+    <div class="screen">
+      <h2 class="screen-title">Step 2: Sending data to Qwen-Max</h2>
+      <p class="screen-subtitle">The raw stats are serialized to JSON and sent as a prompt to Qwen-Max via the DashScope API.</p>
+
+      <div class="translation-block animate-in">
+        <div class="translation-code">
+          <span class="translation-label">CODE</span>
+          <pre><code><span class="code-line"><span class="code-keyword">async def</span> <span class="code-function">_call_qwen</span>(summary_str):</span>
+<span class="code-line">    <span class="code-keyword">async with</span> httpx.<span class="code-function">AsyncClient</span>(timeout=<span class="code-number">30</span>) <span class="code-keyword">as</span> client:</span>
+<span class="code-line">        resp = <span class="code-keyword">await</span> client.<span class="code-function">post</span>(</span>
+<span class="code-line">            <span class="code-string">"https://dashscope.aliyuncs.com/api/v1/..."</span>,</span>
+<span class="code-line">            headers={<span class="code-string">"Authorization"</span>: <span class="code-string">f"Bearer {API_KEY}"</span>},</span>
+<span class="code-line">            json={</span>
+<span class="code-line">                <span class="code-string">"model"</span>: <span class="code-string">"qwen-max"</span>,</span>
+<span class="code-line">                <span class="code-string">"input"</span>: {<span class="code-string">"messages"</span>: [</span>
+<span class="code-line">                    {<span class="code-string">"role"</span>: <span class="code-string">"system"</span>,</span>
+<span class="code-line">                     <span class="code-string">"content"</span>: <span class="code-string">"You are an AI agent optimizer."</span>},</span>
+<span class="code-line">                    {<span class="code-string">"role"</span>: <span class="code-string">"user"</span>,</span>
+<span class="code-line">                     <span class="code-string">"content"</span>: <span class="code-string">f"Analyze this: {summary_str}"</span>},</span>
+<span class="code-line">                ]},</span>
+<span class="code-line">            },</span>
+<span class="code-line">        )</span>
+</code></pre>
+        </div>
+        <div class="translation-english">
+          <span class="translation-label" style="position: relative; top: auto; right: auto; display: block; margin-bottom: var(--space-3)">PLAIN ENGLISH</span>
+          <div class="translation-lines">
+            <p class="tl">Create an HTTP client with a 30-second timeout.</p>
+            <p class="tl">POST to DashScope&apos;s text generation endpoint.</p>
+            <p class="tl">Authenticate with the DashScope API key.</p>
+            <p class="tl">Use the qwen-max model (a powerful LLM).</p>
+            <p class="tl">System prompt: "You are an AI agent optimizer."</p>
+            <p class="tl">User prompt: "Analyze this execution data."</p>
+            <p class="tl">The LLM reads the raw stats and returns optimization JSON.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout callout-info animate-in" style="margin-top: var(--space-8)">
+        <div class="callout-icon">🔄</div>
+        <div>
+          <strong>Mock fallback:</strong> If the DashScope API key isn&apos;t set or the API is unreachable, AgentNexus returns a realistic mock analysis. This means the course works even without external API access — no broken demos.
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 5: What Qwen returns -->
+    <div class="screen">
+      <h2 class="screen-title">What the meta-agent returns</h2>
+      <p class="screen-subtitle">The response combines raw data with AI-powered insights.</p>
+
+      <div class="card-grid" style="grid-template-columns: 1fr; margin-top: var(--space-8)">
+        <div class="feature-card animate-in" style="border-left: 4px solid var(--color-accent)">
+          <h3>📊 raw_stats</h3>
+          <p>The raw data from TiFlash — every combination of agent type, tool, status, and latency from the last 24 hours.</p>
+        </div>
+        <div class="feature-card animate-in" style="border-left: 4px solid #D4A843">
+          <h3>🔍 failure_patterns</h3>
+          <p>Natural language descriptions of what&apos;s going wrong: <em>"web_search error rate exceeds 15% after 22:00 UTC"</em>, <em>"db_query failures correlate with context payloads > 8 KB"</em>.</p>
+        </div>
+        <div class="feature-card animate-in" style="border-left: 4px solid #2D8B55">
+          <h3>⚡ tool_optimizations</h3>
+          <p>Concrete, actionable fixes per tool: <em>"Add retry with exponential back-off (max 3 attempts, base 500ms); cache identical queries for 5 min"</em>.</p>
+        </div>
+        <div class="feature-card animate-in" style="border-left: 4px solid #7B68AE">
+          <h3>📈 efficiency_score</h3>
+          <p>A single number (0-100) summarizing how well the agent fleet is performing. Derived from success rate, latency, and resource utilization.</p>
+        </div>
+        <div class="feature-card animate-in" style="border-left: 4px solid #C44536">
+          <h3>🎯 top_3_recommendations</h3>
+          <p>The three highest-impact changes, ranked by expected improvement: <em>"Parallelise independent tool calls within a session to cut average latency by ~22%"</em>.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 6: Insights endpoint -->
+    <div class="screen">
+      <h2 class="screen-title">The insights endpoint — dashboards in JSON</h2>
+      <p class="screen-subtitle"><code>GET /api/{tenant_id}/insights</code> — a richer analytics endpoint with derived metrics.</p>
+
+      <div class="card-grid" style="grid-template-columns: 1fr 1fr; margin-top: var(--space-8)">
+        <div class="feature-card animate-in" style="border-top: 3px solid var(--color-accent)">
+          <div class="feature-icon" style="background: var(--color-accent-light); color: var(--color-accent)">📋</div>
+          <h3>Session Statistics</h3>
+          <p>Total sessions, completion rate, average duration, unique agent types — all scoped to the last 24 hours.</p>
+        </div>
+        <div class="feature-card animate-in" style="border-top: 3px solid #D4A843">
+          <div class="feature-icon" style="background: #FDF5E0; color: #D4A843">🔧</div>
+          <h3>Tool Usage Patterns</h3>
+          <p>Which tools are called most, their success/failure rates, and average latency. Helps identify the bottleneck tool.</p>
+        </div>
+        <div class="feature-card animate-in" style="border-top: 3px solid #2D8B55">
+          <div class="feature-icon" style="background: #E8F5EE; color: #2D8B55">📈</div>
+          <h3>Agent Performance</h3>
+          <p>Breakdown by agent type: how many sessions each type ran, how many completed vs failed, average duration.</p>
+        </div>
+        <div class="feature-card animate-in" style="border-top: 3px solid #7B68AE">
+          <div class="feature-icon" style="background: #EDE8F5; color: #7B68AE">📅</div>
+          <h3>Daily Trend</h3>
+          <p>Sessions per day for the last 7 days, split by completed/failed. Spot whether things are getting better or worse.</p>
+        </div>
+      </div>
+
+      <div class="callout callout-aha animate-in" style="margin-top: var(--space-8)">
+        <div class="callout-icon">💡</div>
+        <div>
+          <strong>Two endpoints, two purposes:</strong> <code>/meta-agent/report</code> gives you AI-powered recommendations — it tells you <em>what to fix</em>. <code>/insights</code> gives you dashboards data — it tells you <em>what&apos;s happening</em>. Together, they form a complete observability stack.
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 7: The full picture -->
+    <div class="screen">
+      <h2 class="screen-title">The full picture — everything you&apos;ve learned</h2>
+      <p class="screen-subtitle">AgentNexus is five modules working in concert.</p>
+
+      <div class="arch-diagram animate-in" style="margin-top: var(--space-8)">
+        <div class="arch-diagram-inner">
+          <div class="arch-grid" style="grid-template-columns: repeat(5, 1fr);">
+            <div class="arch-component" data-desc="Module 1: Mission Control. The user launches an agent, the FastAPI app receives the request, and middleware verifies the JWT before anything touches the database.">
+              <div class="arch-icon">🚀</div>
+              <span>Mission Control</span>
+            </div>
+            <div class="arch-component" data-desc="Module 2: Cast of Characters. FastAPI handles HTTP, aiomysql talks to TiDB, Pydantic validates shapes, ContextVar carries identity, httpx calls Qwen.">
+              <div class="arch-icon">🎭</div>
+              <span>Cast of Characters</span>
+            </div>
+            <div class="arch-component" data-desc="Module 3: Security Vault. JWT tokens carry verified tenant IDs. Middleware checks them. ContextVar propagates them safely. 404 responses hide what doesn't belong to you.">
+              <div class="arch-icon">🔐</div>
+              <span>Security Vault</span>
+            </div>
+            <div class="arch-component" data-desc="Module 4: Memory Machine. TiDB stores data with composite keys for isolation. TiFlash runs analytics. Per-tenant pools prevent noisy neighbors.">
+              <div class="arch-icon">🧠</div>
+              <span>Memory Machine</span>
+            </div>
+            <div class="arch-component" data-desc="Module 5: AI Watching the AI. The meta-agent queries TiFlash, sends data to Qwen, returns failure patterns and optimization recommendations. It's self-aware infrastructure.">
+              <div class="arch-icon">🔭</div>
+              <span>AI Watching the AI</span>
+            </div>
+          </div>
+        </div>
+        <p class="arch-description">Click any module to review its role in the architecture.</p>
+      </div>
+    </div>
+
+    <!-- Screen 8: Final quiz -->
+    <div class="screen">
+      <h2 class="screen-title">Final challenge</h2>
+      <p class="screen-subtitle">Tie everything together. These questions span all five modules.</p>
+
+      <div class="quiz-container" id="quiz-module5">
+        <div class="quiz-question-block"
+             data-correct="option-b"
+             data-explanation-right="Exactly! The meta-agent endpoint queries TiFlash (columnar store) which is optimized for scanning many rows. It groups by agent_type, tool_name, status, and latency — a classic analytical query pattern that row stores struggle with."
+             data-explanation-wrong="Think about which storage engine is designed for scanning and aggregating across many rows, not individual lookups.">
+          <h3 class="quiz-question">The meta-agent report uses a TiFlash optimizer hint. What would happen if you removed it?</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>The query would fail — TiFlash is required for this query</span>
+            </button>
+            <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>It would run on TiKV (row store) instead — slower for analytics, but the transparent fallback handles it</span>
+            </button>
+            <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>The query would return different data — TiFlash has a separate copy</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question-block"
+             data-correct="option-c"
+             data-explanation-right="Right! If the DashScope API key isn&apos;t set or the API call fails, _call_qwen returns _MOCK_QWEN_ANALYSIS — a realistic set of failure patterns, optimizations, and recommendations. The endpoint always returns useful data."
+             data-explanation-wrong="Consider: the code has a specific fallback mechanism for when the Qwen API is unavailable.">
+          <h3 class="quiz-question">You deploy AgentNexus to a new environment without setting DASHSCOPE_API_KEY. What happens when you call /api/v1/meta-agent/report?</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>It returns a 500 error — the API key is required</span>
+            </button>
+            <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>It returns raw_stats but no qwen_analysis</span>
+            </button>
+            <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>It returns raw_stats plus a mock qwen_analysis with realistic recommendations</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question-block"
+             data-correct="option-a"
+             data-explanation-right="Yes! The insights endpoint explicitly checks that the path tenant_id matches the tenant ID from the verified JWT context. If they don't match, it returns 403 Forbidden. This is an additional layer of defense on top of the middleware."
+             data-explanation-wrong="Think about the tenant validation in the insights endpoint — it does an explicit check before proceeding.">
+          <h3 class="quiz-question">An authenticated user from enterprise-A tries to call GET /api/enterprise-B/insights. What happens?</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>The middleware sets ctx_tenant to enterprise-A, the insights endpoint detects the mismatch, and returns 403</span>
+            </button>
+            <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>The request succeeds and returns enterprise-B&apos;s data — the path parameter overrides the JWT</span>
+            </button>
+            <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>The middleware returns 401 before the request reaches the insights endpoint</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <button class="quiz-check-btn" onclick="checkQuiz('quiz-module5')">Check Answers</button>
+        <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module5')">Try Again</button>
+      </div>
+    </div>
+
+    <!-- Screen 9: Conclusion -->
+    <div class="screen">
+      <h2 class="screen-title">You now understand how AI agents actually work</h2>
+      <p class="screen-subtitle">Not the hype. Not the demos. The real architecture.</p>
+
+      <div class="callout callout-aha animate-in" style="margin-top: var(--space-8)">
+        <div class="callout-icon">🎓</div>
+        <div>
+          <strong>What you&apos;ve learned:</strong>
+          <br><br>
+          ✅ How a FastAPI app receives requests and routes them to the right handlers.<br>
+          ✅ Why JWT tokens with tenant IDs are verified before any database access.<br>
+          ✅ How ContextVar safely propagates identity across async boundaries without leaking between concurrent requests.<br>
+          ✅ Why returning 404 instead of 403 is a deliberate security decision.<br>
+          ✅ How TiDB&apos;s composite keys physically co-locate tenant data for fast, natural isolation.<br>
+          ✅ Why per-tenant connection pools prevent noisy-neighbor problems.<br>
+          ✅ How TiFlash enables analytics on the same data without slowing down transactions.<br>
+          ✅ How an AI can analyze its own performance — and recommend concrete improvements.<br>
+          <br>
+          This is production-grade multi-tenant AI infrastructure. You now speak the language.
+        </div>
+      </div>
+
+      <div class="card-grid" style="grid-template-columns: 1fr 1fr 1fr; margin-top: var(--space-10)">
+        <div class="feature-card animate-in" style="text-align: center; border-top: 3px solid var(--color-accent)">
+          <div class="feature-icon" style="background: var(--color-accent-light); color: var(--color-accent); margin: 0 auto var(--space-3)">🚀</div>
+          <h3>Run it</h3>
+          <p><code>uvicorn main:app --reload</code><br>Then hit the endpoints from the curl commands in <code>main.py</code>.</p>
+        </div>
+        <div class="feature-card animate-in" style="text-align: center; border-top: 3px solid #D4A843">
+          <div class="feature-icon" style="background: #FDF5E0; color: #D4A843; margin: 0 auto var(--space-3)">📖</div>
+          <h3>Read it</h3>
+          <p>Every file in <code>app/</code> is small and focused. Read them in order: middleware → context → db → routes.</p>
+        </div>
+        <div class="feature-card animate-in" style="text-align: center; border-top: 3px solid #2D8B55">
+          <div class="feature-icon" style="background: #E8F5EE; color: #2D8B55; margin: 0 auto var(--space-3)">🔧</div>
+          <h3>Extend it</h3>
+          <p>Add a new tool, a new agent type, or a new analytics query. The patterns are all reusable.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+  </main>
+
+</body>
+</html>

@@ -1,0 +1,313 @@
+<section class="module" id="module-4" style="background: var(--color-bg-warm)">
+  <div class="module-content">
+
+    <!-- Screen 1: Hero -->
+    <div class="screen">
+      <div class="module-number">04</div>
+      <h1 class="module-title">The Memory Machine</h1>
+      <p class="module-subtitle">How AgentNexus stores, queries, and analyzes data across thousands of concurrent agent sessions</p>
+
+      <div class="callout callout-info animate-in" style="margin-top: var(--space-10)">
+        <div class="callout-icon">🧠</div>
+        <div>
+          Every agent session, every tool call, every result — it all lives in one place: TiDB. But this isn&apos;t just a database. It&apos;s a hybrid engine that does both transactions (OLTP) and analytics (OLAP) on the same data, without copying it anywhere.
+          <br><br>
+          Let&apos;s look at how the schema is built to make multi-tenant isolation natural and fast.
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 2: Schema design -->
+    <div class="screen">
+      <h2 class="screen-title">The schema — built for isolation from the ground up</h2>
+      <p class="screen-subtitle">Three core tables, each designed so tenant data stays separate by construction.</p>
+
+      <div class="arch-diagram animate-in" style="margin-top: var(--space-8)">
+        <div class="arch-diagram-inner">
+          <div class="arch-grid">
+            <div class="arch-component" data-desc="Tenants: The root of isolation. Each tenant has a unique tenant_id that flows through every other table. Partitioned by range for fast lookups.">
+              <div class="arch-icon">🏢</div>
+              <span>tenants</span>
+            </div>
+            <div class="arch-component" data-desc="Agent Sessions: Every agent run is a session. Composite primary key (tenant_id, session_id) means queries for 'my sessions' are physically co-located. Partitioned by tenant_id.">
+              <div class="arch-icon">🤖</div>
+              <span>agent_sessions</span>
+            </div>
+            <div class="arch-component" data-desc="Tool Call History: Every tool invocation is logged here. Composite key (tenant_id, session_id, call_id). Also has a TiFlash replica for analytical queries.">
+              <div class="arch-icon">🔧</div>
+              <span>tool_call_history</span>
+            </div>
+          </div>
+          <div class="arch-connections">
+            <div class="arch-arrow">tenant_id →</div>
+            <div class="arch-arrow">session_id + tenant_id →</div>
+          </div>
+        </div>
+        <p class="arch-description">Click any component to learn how it enforces tenant isolation.</p>
+      </div>
+
+      <div class="callout callout-aha animate-in" style="margin-top: var(--space-8)">
+        <div class="callout-icon">💡</div>
+        <div>
+          <strong>The key insight:</strong> <code>tenant_id</code> is the first column in every primary key. This isn&apos;t arbitrary — TiDB physically co-locates rows with the same tenant_id together on disk. When you query "give me all sessions for tenant X," the database doesn&apos;t scan the whole table. It goes straight to tenant X&apos;s region.
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 3: Composite primary key explained -->
+    <div class="screen">
+      <h2 class="screen-title">Why composite primary keys?</h2>
+      <p class="screen-subtitle">A design decision that makes isolation free, not bolted-on.</p>
+
+      <div class="card-grid" style="grid-template-columns: 1fr 1fr; margin-top: var(--space-8)">
+        <div class="feature-card animate-in" style="border-top: 3px solid var(--color-error)">
+          <div class="feature-icon" style="background: var(--color-error-light); color: var(--color-error)">⚠️</div>
+          <h3>Simple auto-increment ID</h3>
+          <pre style="font-size: var(--text-xs); margin-top: var(--space-2)"><code>PRIMARY KEY (id)
+INDEX (tenant_id)
+
+-- Query needs full index scan:
+SELECT * FROM sessions
+WHERE tenant_id = 'A'
+-- Scans ALL rows, filters by A
+-- 🔒 Works, but slow at scale</code></pre>
+          <p style="margin-top: var(--space-3); color: var(--color-error)">Every query must filter on tenant_id as a secondary index — extra work.</p>
+        </div>
+        <div class="feature-card animate-in" style="border-top: 3px solid var(--color-success)">
+          <div class="feature-icon" style="background: var(--color-success-light); color: var(--color-success)">✅</div>
+          <h3>Composite key (tenant_id, session_id)</h3>
+          <pre style="font-size: var(--text-xs); margin-top: var(--space-2)"><code>PRIMARY KEY (tenant_id, session_id)
+
+-- Query hits the clustered index directly:
+SELECT * FROM sessions
+WHERE tenant_id = 'A' AND session_id = 'x'
+-- Goes straight to tenant A's region
+-- ⚡ Fast by construction</code></pre>
+          <p style="margin-top: var(--space-3); color: var(--color-success)">tenant_id is baked into the primary key — isolation is physical, not just logical.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 4: Connection pooling -->
+    <div class="screen">
+      <h2 class="screen-title">Connection pooling — one pool per tenant</h2>
+      <p class="screen-subtitle">From <code>app/db.py</code> — the <span class="tooltip" data-tip="A connection pool is a cache of pre-established database connections. Creating a new TCP connection + SSL handshake is expensive (~50ms). A pool keeps connections warm and ready, cutting latency to ~1ms.">TiDBPoolManager</span> creates isolated pools.</p>
+
+      <div class="translation-block animate-in">
+        <div class="translation-code">
+          <span class="translation-label">CODE</span>
+          <pre><code><span class="code-line"><span class="code-keyword">class</span> <span class="code-function">TiDBPoolManager</span>:</span>
+<span class="code-line">    <span class="code-keyword">def</span> <span class="code-function">__init__</span>(self):</span>
+<span class="code-line">        self._pools: dict[str, Pool] = {}</span>
+<span class="code-line">        self._lock = asyncio.Lock()</span>
+<span class="code-line"></span>
+<span class="code-line">    <span class="code-keyword">async def</span> <span class="code-function">get_pool</span>(self, tenant_id):</span>
+<span class="code-line">        <span class="code-keyword">if</span> tenant_id <span class="code-keyword">in</span> self._pools:</span>
+<span class="code-line">            <span class="code-keyword">return</span> self._pools[tenant_id]</span>
+<span class="code-line">        <span class="code-keyword">async with</span> self._lock:</span>
+<span class="code-line">            <span class="code-keyword">if</span> tenant_id <span class="code-keyword">in</span> self._pools:</span>
+<span class="code-line">                <span class="code-keyword">return</span> self._pools[tenant_id]</span>
+<span class="code-line">            pool = <span class="code-keyword">await</span> aiomysql.create_pool(...)</span>
+<span class="code-line">            self._pools[tenant_id] = pool</span>
+<span class="code-line">            <span class="code-keyword">return</span> pool</span>
+</code></pre>
+        </div>
+        <div class="translation-english">
+          <span class="translation-label" style="position: relative; top: auto; right: auto; display: block; margin-bottom: var(--space-3)">PLAIN ENGLISH</span>
+          <div class="translation-lines">
+            <p class="tl">Each tenant gets their own connection pool (min 1, max 10 connections).</p>
+            <p class="tl">First request from tenant A → create pool A.</p>
+            <p class="tl">Second request from tenant A → reuse pool A (instant).</p>
+            <p class="tl">First request from tenant B → create pool B (separate).</p>
+            <p class="tl">The lock + double-check prevents two coroutines from creating duplicate pools during a race condition.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout callout-info animate-in" style="margin-top: var(--space-8)">
+        <div class="callout-icon">🔑</div>
+        <div>
+          <strong>Why per-tenant pools?</strong> This gives you visibility and control. You can see that tenant A is using 8/10 connections while tenant B is idle. You can rate-limit, quota, or even shut down one tenant&apos;s pool without affecting others. It&apos;s isolation at every layer.
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 5: TiFlash — the analytical engine -->
+    <div class="screen">
+      <h2 class="screen-title">TiFlash — analytics without slowing down transactions</h2>
+      <p class="screen-subtitle">The same data, two storage engines. Row-based for transactions, column-based for analytics.</p>
+
+      <div class="card-grid" style="grid-template-columns: 1fr 1fr; margin-top: var(--space-8)">
+        <div class="feature-card animate-in" style="border-left: 4px solid #2A7B9B">
+          <div class="feature-icon" style="background: var(--color-accent-light); color: var(--color-accent)">📝</div>
+          <h3>TiKV — Row Store (OLTP)</h3>
+          <p>Optimized for <strong>single-row operations</strong>:</p>
+          <ul style="margin-top: var(--space-2); padding-left: var(--space-4)">
+            <li>INSERT a new session</li>
+            <li>UPDATE tool call status</li>
+            <li>SELECT one session by ID</li>
+          </ul>
+          <p style="margin-top: var(--space-2); color: var(--color-text-muted)">Fast for point lookups and writes.</p>
+        </div>
+        <div class="feature-card animate-in" style="border-left: 4px solid #D4A843">
+          <div class="feature-icon" style="background: #FDF5E0; color: #D4A843">📊</div>
+          <h3>TiFlash — Column Store (OLAP)</h3>
+          <p>Optimized for <strong>scanning many rows</strong>:</p>
+          <ul style="margin-top: var(--space-2); padding-left: var(--space-4)">
+            <li>COUNT failures by agent type</li>
+            <li>AVG latency across 1000 sessions</li>
+            <li>GROUP BY tool_name, status</li>
+          </ul>
+          <p style="margin-top: var(--space-2); color: var(--color-text-muted)">Fast for analytics — reads only the columns it needs.</p>
+        </div>
+      </div>
+
+      <div class="translation-block animate-in" style="margin-top: var(--space-8)">
+        <div class="translation-code">
+          <span class="translation-label">CODE</span>
+          <pre><code><span class="code-line"><span class="code-keyword">async def</span> <span class="code-function">execute_tiflash</span>(tenant_id, sql, args):</span>
+<span class="code-line">    hint = <span class="code-string">"/*+ READ_FROM_STORAGE(tiflash[agent_sessions, tool_call_history]) */ "</span></span>
+<span class="code-line">    hint_sql = sql[:offset + <span class="code-number">6</span>] + <span class="code-string">" "</span> + hint + sql[offset + <span class="code-number">7</span>:]</span>
+<span class="code-line">    <span class="code-keyword">try</span>:</span>
+<span class="code-line">        <span class="code-keyword">return await</span> pool_manager.execute(tenant_id, hint_sql, args)</span>
+<span class="code-line">    <span class="code-keyword">except</span> Exception <span class="code-keyword">as</span> exc:</span>
+<span class="code-line">        <span class="code-comment"># TiFlash unavailable? Fall back to TiKV transparenty.</span></span>
+<span class="code-line">        <span class="code-keyword">return await</span> pool_manager.execute(tenant_id, sql, args)</span>
+</code></pre>
+        </div>
+        <div class="translation-english">
+          <span class="translation-label" style="position: relative; top: auto; right: auto; display: block; margin-bottom: var(--space-3)">PLAIN ENGLISH</span>
+          <div class="translation-lines">
+            <p class="tl">This helper wraps any SELECT with a TiFlash optimizer hint.</p>
+            <p class="tl">The hint tells TiDB: "use the columnar store for these tables."</p>
+            <p class="tl">The hint is injected into the SQL text after the SELECT keyword.</p>
+            <p class="tl">If TiFlash is ready → columnar speed.</p>
+            <p class="tl">If TiFlash isn&apos;t set up yet → transparently falls back to row store.</p>
+            <p class="tl">The caller never needs to handle the fallback — it just works.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 6: The execute pattern -->
+    <div class="screen">
+      <h2 class="screen-title">The execute pattern — clean, safe, tenant-scoped</h2>
+      <p class="screen-subtitle">Every database call in AgentNexus follows the same pattern.</p>
+
+      <div class="translation-block animate-in">
+        <div class="translation-code">
+          <span class="translation-label">CODE</span>
+          <pre><code><span class="code-line"><span class="code-keyword">async def</span> <span class="code-function">launch_agent</span>(body: LaunchAgentRequest):</span>
+<span class="code-line">    tenant_id  = ctx_tenant.<span class="code-function">get</span>()  <span class="code-comment"># from verified middleware</span></span>
+<span class="code-line">    session_id = str(uuid.<span class="code-function">uuid4</span>())</span>
+<span class="code-line">    conn = <span class="code-keyword">await</span> <span class="code-function">get_conn</span>(tenant_id)</span>
+<span class="code-line">    <span class="code-keyword">try</span>:</span>
+<span class="code-line">        <span class="code-keyword">async with</span> conn.<span class="code-function">cursor</span>() <span class="code-keyword">as</span> cur:</span>
+<span class="code-line">            <span class="code-keyword">await</span> cur.<span class="code-function">execute</span>(</span>
+<span class="code-line">                <span class="code-string">"INSERT INTO agent_sessions ..."</span>,</span>
+<span class="code-line">                (session_id, tenant_id, ...)</span>
+<span class="code-line">            )</span>
+<span class="code-line">    <span class="code-keyword">finally</span>:</span>
+<span class="code-line">        <span class="code-keyword">await</span> <span class="code-function">release_conn</span>(tenant_id, conn)</span>
+</code></pre>
+        </div>
+        <div class="translation-english">
+          <span class="translation-label" style="position: relative; top: auto; right: auto; display: block; margin-bottom: var(--space-3)">PLAIN ENGLISH</span>
+          <div class="translation-lines">
+            <p class="tl">Get the tenant ID from the verified context (set by middleware).</p>
+            <p class="tl">Generate a unique session ID.</p>
+            <p class="tl">Acquire a connection from this tenant&apos;s pool.</p>
+            <p class="tl">Execute the query with parameterized SQL (no string interpolation).</p>
+            <p class="tl">The INSERT includes tenant_id — so this row belongs to this tenant only.</p>
+            <p class="tl">Guaranteed cleanup: release the connection back to the pool.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout callout-aha animate-in" style="margin-top: var(--space-8)">
+        <div class="callout-icon">💡</div>
+        <div>
+          <strong>Notice: tenant_id is never taken from the request body.</strong> It flows from middleware → ContextVar → get_conn(). The request body can contain any tenant_id it wants — the code ignores it. This is called <span class="tooltip" data-tip="Trusted input means data that comes from a source the system controls, not from the user. Here, tenant_id comes from the verified JWT (server-created), not from the request body (user-controlled).">trusted source, not untrusted input</span>.
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 7: Quiz -->
+    <div class="screen">
+      <h2 class="screen-title">Check your understanding</h2>
+      <p class="screen-subtitle">Apply what you learned about the database layer.</p>
+
+      <div class="quiz-container" id="quiz-module4">
+        <div class="quiz-question-block"
+             data-correct="option-b"
+             data-explanation-right="Exactly! With PRIMARY KEY (tenant_id, session_id), TiDB physically co-locates rows by tenant. A query with WHERE tenant_id = 'A' goes directly to tenant A's region — it doesn't need to scan the entire table."
+             data-explanation-wrong="Think about how TiDB stores rows with a composite primary key. The first column determines physical placement on disk.">
+          <h3 class="quiz-question">Why does putting tenant_id first in the primary key make queries faster?</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>It creates a secondary index that&apos;s automatically cached</span>
+            </button>
+            <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>TiDB co-locates rows with the same tenant_id together — queries go straight to that region</span>
+            </button>
+            <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>It prevents other tenants&apos; rows from being written at the same time</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question-block"
+             data-correct="option-c"
+             data-explanation-right="Right! TiFlash is a columnar replica optimized for analytical queries (GROUP BY, AVG, COUNT across many rows). TiKV is the row store, better for single-row lookups and writes. The optimizer hint tells TiDB which engine to use."
+             data-explanation-wrong="Consider: what kind of query benefits from reading only specific columns instead of entire rows?">
+          <h3 class="quiz-question">What is TiFlash designed to do better than TiKV?</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>Handle more concurrent writes per second</span>
+            </button>
+            <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>Store encrypted data at rest</span>
+            </button>
+            <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>Run analytical queries that scan many rows efficiently</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question-block"
+             data-correct="option-a"
+             data-explanation-right="Yes! Each tenant gets their own pool of 1-10 connections. If tenant A is doing heavy work and uses all 10 connections, tenant B still has their own pool of 10 — completely unaffected. No noisy-neighbor problem."
+             data-explanation-wrong="Think about what 'per-tenant pool' means for resource isolation between tenants.">
+          <h3 class="quiz-question">Tenant A is running 50 concurrent agent sessions while Tenant B is idle. How does per-tenant connection pooling affect Tenant B?</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>Tenant B&apos;s pool is untouched — no contention with Tenant A</span>
+            </button>
+            <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>Tenant B&apos;s queries slow down because the database is busy with Tenant A</span>
+            </button>
+            <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>Tenant B&apos;s pool is automatically expanded to compensate</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <button class="quiz-check-btn" onclick="checkQuiz('quiz-module4')">Check Answers</button>
+        <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module4')">Try Again</button>
+      </div>
+    </div>
+
+  </div>
+</section>

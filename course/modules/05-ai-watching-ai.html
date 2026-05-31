@@ -1,0 +1,364 @@
+<section class="module" id="module-5" style="background: var(--color-bg)">
+  <div class="module-content">
+
+    <!-- Screen 1: Hero -->
+    <div class="screen">
+      <div class="module-number">05</div>
+      <h1 class="module-title">The AI Watching the AI</h1>
+      <p class="module-subtitle">How the meta-agent analyzes tool calls, finds failure patterns, and recommends optimizations — using AI itself</p>
+
+      <div class="callout callout-info animate-in" style="margin-top: var(--space-10)">
+        <div class="callout-icon">🔭</div>
+        <div>
+          AgentNexus doesn&apos;t just run agents — it watches them. A dedicated endpoint collects the last 24 hours of execution data, sends it to Qwen-Max for analysis, and returns actionable insights: which tools are failing, what patterns cause latency spikes, and how to fix them.
+          <br><br>
+          The system is self-aware. Let&apos;s see how.
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 2: Meta-agent endpoint -->
+    <div class="screen">
+      <h2 class="screen-title">The meta-agent report endpoint</h2>
+      <p class="screen-subtitle"><code>GET /api/v1/meta-agent/report</code> — one call, three steps.</p>
+
+      <div class="flow-animation animate-in"
+           data-steps='[
+             {"label": "Step 1: Query TiFlash for 24-hour execution stats", "highlight": "flow-tiflash", "from": "client", "to": "tiflash"},
+             {"label": "Step 2: Aggregate raw stats — agent types, tool names, statuses, latencies", "highlight": "flow-aggregate", "from": "tiflash", "to": "aggregate"},
+             {"label": "Step 3: Send summary to Qwen-Max for optimization analysis", "highlight": "flow-qwen", "from": "aggregate", "to": "qwen"},
+             {"label": "Step 4: Return combined report: raw_stats + qwen_analysis", "highlight": "flow-return", "from": "qwen", "to": "client"}
+           ]'>
+        <div class="flow-nodes">
+          <div class="flow-node" id="flow-client">
+            <div class="flow-node-icon">👤</div>
+            <div class="flow-node-label">Client</div>
+          </div>
+          <div class="flow-node" id="flow-tiflash">
+            <div class="flow-node-icon">📊</div>
+            <div class="flow-node-label">TiFlash</div>
+          </div>
+          <div class="flow-node" id="flow-aggregate">
+            <div class="flow-node-icon">⚙️</div>
+            <div class="flow-node-label">Aggregate</div>
+          </div>
+          <div class="flow-node" id="flow-qwen">
+            <div class="flow-node-icon">🧠</div>
+            <div class="flow-node-label">Qwen-Max</div>
+          </div>
+        </div>
+        <div class="flow-controls">
+          <div class="flow-step-label">Click "Next Step" to see the flow</div>
+          <div class="flow-progress">Step 0 / 4</div>
+          <div class="flow-buttons">
+            <button class="flow-next-btn">Next Step →</button>
+            <button class="flow-reset-btn">Reset</button>
+          </div>
+        </div>
+        <div class="flow-packet"></div>
+      </div>
+    </div>
+
+    <!-- Screen 3: The TiFlash query -->
+    <div class="screen">
+      <h2 class="screen-title">Step 1: The analytics query</h2>
+      <p class="screen-subtitle">A single query that joins sessions with tool calls, grouped by agent type, tool name, status, and latency.</p>
+
+      <div class="translation-block animate-in">
+        <div class="translation-code">
+          <span class="translation-label">CODE</span>
+          <pre><code><span class="code-line"><span class="code-keyword">SELECT</span></span>
+<span class="code-line">    s.agent_type,</span>
+<span class="code-line">    t.tool_name,</span>
+<span class="code-line">    t.status,</span>
+<span class="code-line">    t.latency_ms,</span>
+<span class="code-line">    <span class="code-function">COUNT</span>(*) <span class="code-keyword">AS</span> cnt</span>
+<span class="code-line"><span class="code-keyword">FROM</span>   agent_sessions s</span>
+<span class="code-line"><span class="code-keyword">JOIN</span>   tool_call_history t <span class="code-keyword">ON</span> s.session_id = t.session_id</span>
+<span class="code-line"><span class="code-keyword">WHERE</span>  s.tenant_id  = %s</span>
+<span class="code-line">  <span class="code-keyword">AND</span>  s.created_at > <span class="code-function">NOW</span>() - <span class="code-keyword">INTERVAL</span> <span class="code-number">24</span> <span class="code-keyword">HOUR</span></span>
+<span class="code-line"><span class="code-keyword">GROUP BY</span> s.agent_type, t.tool_name, t.status, t.latency_ms</span>
+</code></pre>
+        </div>
+        <div class="translation-english">
+          <span class="translation-label" style="position: relative; top: auto; right: auto; display: block; margin-bottom: var(--space-3)">PLAIN ENGLISH</span>
+          <div class="translation-lines">
+            <p class="tl">For each agent type (research, codegen, data, web)...</p>
+            <p class="tl">...and each tool used (web_search, code_exec, db_query, etc.)...</p>
+            <p class="tl">...count how many calls succeeded, failed, or timed out...</p>
+            <p class="tl">...along with their latency in milliseconds.</p>
+            <p class="tl">Only for this tenant (from the verified JWT context).</p>
+            <p class="tl">Only for sessions created in the last 24 hours.</p>
+            <p class="tl">Grouped so you can spot patterns: "web_search fails 15% of the time after 22:00 UTC."</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 4: Qwen analysis -->
+    <div class="screen">
+      <h2 class="screen-title">Step 2: Sending data to Qwen-Max</h2>
+      <p class="screen-subtitle">The raw stats are serialized to JSON and sent as a prompt to Qwen-Max via the DashScope API.</p>
+
+      <div class="translation-block animate-in">
+        <div class="translation-code">
+          <span class="translation-label">CODE</span>
+          <pre><code><span class="code-line"><span class="code-keyword">async def</span> <span class="code-function">_call_qwen</span>(summary_str):</span>
+<span class="code-line">    <span class="code-keyword">async with</span> httpx.<span class="code-function">AsyncClient</span>(timeout=<span class="code-number">30</span>) <span class="code-keyword">as</span> client:</span>
+<span class="code-line">        resp = <span class="code-keyword">await</span> client.<span class="code-function">post</span>(</span>
+<span class="code-line">            <span class="code-string">"https://dashscope.aliyuncs.com/api/v1/..."</span>,</span>
+<span class="code-line">            headers={<span class="code-string">"Authorization"</span>: <span class="code-string">f"Bearer {API_KEY}"</span>},</span>
+<span class="code-line">            json={</span>
+<span class="code-line">                <span class="code-string">"model"</span>: <span class="code-string">"qwen-max"</span>,</span>
+<span class="code-line">                <span class="code-string">"input"</span>: {<span class="code-string">"messages"</span>: [</span>
+<span class="code-line">                    {<span class="code-string">"role"</span>: <span class="code-string">"system"</span>,</span>
+<span class="code-line">                     <span class="code-string">"content"</span>: <span class="code-string">"You are an AI agent optimizer."</span>},</span>
+<span class="code-line">                    {<span class="code-string">"role"</span>: <span class="code-string">"user"</span>,</span>
+<span class="code-line">                     <span class="code-string">"content"</span>: <span class="code-string">f"Analyze this: {summary_str}"</span>},</span>
+<span class="code-line">                ]},</span>
+<span class="code-line">            },</span>
+<span class="code-line">        )</span>
+</code></pre>
+        </div>
+        <div class="translation-english">
+          <span class="translation-label" style="position: relative; top: auto; right: auto; display: block; margin-bottom: var(--space-3)">PLAIN ENGLISH</span>
+          <div class="translation-lines">
+            <p class="tl">Create an HTTP client with a 30-second timeout.</p>
+            <p class="tl">POST to DashScope&apos;s text generation endpoint.</p>
+            <p class="tl">Authenticate with the DashScope API key.</p>
+            <p class="tl">Use the qwen-max model (a powerful LLM).</p>
+            <p class="tl">System prompt: "You are an AI agent optimizer."</p>
+            <p class="tl">User prompt: "Analyze this execution data."</p>
+            <p class="tl">The LLM reads the raw stats and returns optimization JSON.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout callout-info animate-in" style="margin-top: var(--space-8)">
+        <div class="callout-icon">🔄</div>
+        <div>
+          <strong>Mock fallback:</strong> If the DashScope API key isn&apos;t set or the API is unreachable, AgentNexus returns a realistic mock analysis. This means the course works even without external API access — no broken demos.
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 5: What Qwen returns -->
+    <div class="screen">
+      <h2 class="screen-title">What the meta-agent returns</h2>
+      <p class="screen-subtitle">The response combines raw data with AI-powered insights.</p>
+
+      <div class="card-grid" style="grid-template-columns: 1fr; margin-top: var(--space-8)">
+        <div class="feature-card animate-in" style="border-left: 4px solid var(--color-accent)">
+          <h3>📊 raw_stats</h3>
+          <p>The raw data from TiFlash — every combination of agent type, tool, status, and latency from the last 24 hours.</p>
+        </div>
+        <div class="feature-card animate-in" style="border-left: 4px solid #D4A843">
+          <h3>🔍 failure_patterns</h3>
+          <p>Natural language descriptions of what&apos;s going wrong: <em>"web_search error rate exceeds 15% after 22:00 UTC"</em>, <em>"db_query failures correlate with context payloads > 8 KB"</em>.</p>
+        </div>
+        <div class="feature-card animate-in" style="border-left: 4px solid #2D8B55">
+          <h3>⚡ tool_optimizations</h3>
+          <p>Concrete, actionable fixes per tool: <em>"Add retry with exponential back-off (max 3 attempts, base 500ms); cache identical queries for 5 min"</em>.</p>
+        </div>
+        <div class="feature-card animate-in" style="border-left: 4px solid #7B68AE">
+          <h3>📈 efficiency_score</h3>
+          <p>A single number (0-100) summarizing how well the agent fleet is performing. Derived from success rate, latency, and resource utilization.</p>
+        </div>
+        <div class="feature-card animate-in" style="border-left: 4px solid #C44536">
+          <h3>🎯 top_3_recommendations</h3>
+          <p>The three highest-impact changes, ranked by expected improvement: <em>"Parallelise independent tool calls within a session to cut average latency by ~22%"</em>.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 6: Insights endpoint -->
+    <div class="screen">
+      <h2 class="screen-title">The insights endpoint — dashboards in JSON</h2>
+      <p class="screen-subtitle"><code>GET /api/{tenant_id}/insights</code> — a richer analytics endpoint with derived metrics.</p>
+
+      <div class="card-grid" style="grid-template-columns: 1fr 1fr; margin-top: var(--space-8)">
+        <div class="feature-card animate-in" style="border-top: 3px solid var(--color-accent)">
+          <div class="feature-icon" style="background: var(--color-accent-light); color: var(--color-accent)">📋</div>
+          <h3>Session Statistics</h3>
+          <p>Total sessions, completion rate, average duration, unique agent types — all scoped to the last 24 hours.</p>
+        </div>
+        <div class="feature-card animate-in" style="border-top: 3px solid #D4A843">
+          <div class="feature-icon" style="background: #FDF5E0; color: #D4A843">🔧</div>
+          <h3>Tool Usage Patterns</h3>
+          <p>Which tools are called most, their success/failure rates, and average latency. Helps identify the bottleneck tool.</p>
+        </div>
+        <div class="feature-card animate-in" style="border-top: 3px solid #2D8B55">
+          <div class="feature-icon" style="background: #E8F5EE; color: #2D8B55">📈</div>
+          <h3>Agent Performance</h3>
+          <p>Breakdown by agent type: how many sessions each type ran, how many completed vs failed, average duration.</p>
+        </div>
+        <div class="feature-card animate-in" style="border-top: 3px solid #7B68AE">
+          <div class="feature-icon" style="background: #EDE8F5; color: #7B68AE">📅</div>
+          <h3>Daily Trend</h3>
+          <p>Sessions per day for the last 7 days, split by completed/failed. Spot whether things are getting better or worse.</p>
+        </div>
+      </div>
+
+      <div class="callout callout-aha animate-in" style="margin-top: var(--space-8)">
+        <div class="callout-icon">💡</div>
+        <div>
+          <strong>Two endpoints, two purposes:</strong> <code>/meta-agent/report</code> gives you AI-powered recommendations — it tells you <em>what to fix</em>. <code>/insights</code> gives you dashboards data — it tells you <em>what&apos;s happening</em>. Together, they form a complete observability stack.
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 7: The full picture -->
+    <div class="screen">
+      <h2 class="screen-title">The full picture — everything you&apos;ve learned</h2>
+      <p class="screen-subtitle">AgentNexus is five modules working in concert.</p>
+
+      <div class="arch-diagram animate-in" style="margin-top: var(--space-8)">
+        <div class="arch-diagram-inner">
+          <div class="arch-grid" style="grid-template-columns: repeat(5, 1fr);">
+            <div class="arch-component" data-desc="Module 1: Mission Control. The user launches an agent, the FastAPI app receives the request, and middleware verifies the JWT before anything touches the database.">
+              <div class="arch-icon">🚀</div>
+              <span>Mission Control</span>
+            </div>
+            <div class="arch-component" data-desc="Module 2: Cast of Characters. FastAPI handles HTTP, aiomysql talks to TiDB, Pydantic validates shapes, ContextVar carries identity, httpx calls Qwen.">
+              <div class="arch-icon">🎭</div>
+              <span>Cast of Characters</span>
+            </div>
+            <div class="arch-component" data-desc="Module 3: Security Vault. JWT tokens carry verified tenant IDs. Middleware checks them. ContextVar propagates them safely. 404 responses hide what doesn't belong to you.">
+              <div class="arch-icon">🔐</div>
+              <span>Security Vault</span>
+            </div>
+            <div class="arch-component" data-desc="Module 4: Memory Machine. TiDB stores data with composite keys for isolation. TiFlash runs analytics. Per-tenant pools prevent noisy neighbors.">
+              <div class="arch-icon">🧠</div>
+              <span>Memory Machine</span>
+            </div>
+            <div class="arch-component" data-desc="Module 5: AI Watching the AI. The meta-agent queries TiFlash, sends data to Qwen, returns failure patterns and optimization recommendations. It's self-aware infrastructure.">
+              <div class="arch-icon">🔭</div>
+              <span>AI Watching the AI</span>
+            </div>
+          </div>
+        </div>
+        <p class="arch-description">Click any module to review its role in the architecture.</p>
+      </div>
+    </div>
+
+    <!-- Screen 8: Final quiz -->
+    <div class="screen">
+      <h2 class="screen-title">Final challenge</h2>
+      <p class="screen-subtitle">Tie everything together. These questions span all five modules.</p>
+
+      <div class="quiz-container" id="quiz-module5">
+        <div class="quiz-question-block"
+             data-correct="option-b"
+             data-explanation-right="Exactly! The meta-agent endpoint queries TiFlash (columnar store) which is optimized for scanning many rows. It groups by agent_type, tool_name, status, and latency — a classic analytical query pattern that row stores struggle with."
+             data-explanation-wrong="Think about which storage engine is designed for scanning and aggregating across many rows, not individual lookups.">
+          <h3 class="quiz-question">The meta-agent report uses a TiFlash optimizer hint. What would happen if you removed it?</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>The query would fail — TiFlash is required for this query</span>
+            </button>
+            <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>It would run on TiKV (row store) instead — slower for analytics, but the transparent fallback handles it</span>
+            </button>
+            <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>The query would return different data — TiFlash has a separate copy</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question-block"
+             data-correct="option-c"
+             data-explanation-right="Right! If the DashScope API key isn&apos;t set or the API call fails, _call_qwen returns _MOCK_QWEN_ANALYSIS — a realistic set of failure patterns, optimizations, and recommendations. The endpoint always returns useful data."
+             data-explanation-wrong="Consider: the code has a specific fallback mechanism for when the Qwen API is unavailable.">
+          <h3 class="quiz-question">You deploy AgentNexus to a new environment without setting DASHSCOPE_API_KEY. What happens when you call /api/v1/meta-agent/report?</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>It returns a 500 error — the API key is required</span>
+            </button>
+            <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>It returns raw_stats but no qwen_analysis</span>
+            </button>
+            <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>It returns raw_stats plus a mock qwen_analysis with realistic recommendations</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question-block"
+             data-correct="option-a"
+             data-explanation-right="Yes! The insights endpoint explicitly checks that the path tenant_id matches the tenant ID from the verified JWT context. If they don't match, it returns 403 Forbidden. This is an additional layer of defense on top of the middleware."
+             data-explanation-wrong="Think about the tenant validation in the insights endpoint — it does an explicit check before proceeding.">
+          <h3 class="quiz-question">An authenticated user from enterprise-A tries to call GET /api/enterprise-B/insights. What happens?</h3>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>The middleware sets ctx_tenant to enterprise-A, the insights endpoint detects the mismatch, and returns 403</span>
+            </button>
+            <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>The request succeeds and returns enterprise-B&apos;s data — the path parameter overrides the JWT</span>
+            </button>
+            <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>The middleware returns 401 before the request reaches the insights endpoint</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <button class="quiz-check-btn" onclick="checkQuiz('quiz-module5')">Check Answers</button>
+        <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module5')">Try Again</button>
+      </div>
+    </div>
+
+    <!-- Screen 9: Conclusion -->
+    <div class="screen">
+      <h2 class="screen-title">You now understand how AI agents actually work</h2>
+      <p class="screen-subtitle">Not the hype. Not the demos. The real architecture.</p>
+
+      <div class="callout callout-aha animate-in" style="margin-top: var(--space-8)">
+        <div class="callout-icon">🎓</div>
+        <div>
+          <strong>What you&apos;ve learned:</strong>
+          <br><br>
+          ✅ How a FastAPI app receives requests and routes them to the right handlers.<br>
+          ✅ Why JWT tokens with tenant IDs are verified before any database access.<br>
+          ✅ How ContextVar safely propagates identity across async boundaries without leaking between concurrent requests.<br>
+          ✅ Why returning 404 instead of 403 is a deliberate security decision.<br>
+          ✅ How TiDB&apos;s composite keys physically co-locate tenant data for fast, natural isolation.<br>
+          ✅ Why per-tenant connection pools prevent noisy-neighbor problems.<br>
+          ✅ How TiFlash enables analytics on the same data without slowing down transactions.<br>
+          ✅ How an AI can analyze its own performance — and recommend concrete improvements.<br>
+          <br>
+          This is production-grade multi-tenant AI infrastructure. You now speak the language.
+        </div>
+      </div>
+
+      <div class="card-grid" style="grid-template-columns: 1fr 1fr 1fr; margin-top: var(--space-10)">
+        <div class="feature-card animate-in" style="text-align: center; border-top: 3px solid var(--color-accent)">
+          <div class="feature-icon" style="background: var(--color-accent-light); color: var(--color-accent); margin: 0 auto var(--space-3)">🚀</div>
+          <h3>Run it</h3>
+          <p><code>uvicorn main:app --reload</code><br>Then hit the endpoints from the curl commands in <code>main.py</code>.</p>
+        </div>
+        <div class="feature-card animate-in" style="text-align: center; border-top: 3px solid #D4A843">
+          <div class="feature-icon" style="background: #FDF5E0; color: #D4A843; margin: 0 auto var(--space-3)">📖</div>
+          <h3>Read it</h3>
+          <p>Every file in <code>app/</code> is small and focused. Read them in order: middleware → context → db → routes.</p>
+        </div>
+        <div class="feature-card animate-in" style="text-align: center; border-top: 3px solid #2D8B55">
+          <div class="feature-icon" style="background: #E8F5EE; color: #2D8B55; margin: 0 auto var(--space-3)">🔧</div>
+          <h3>Extend it</h3>
+          <p>Add a new tool, a new agent type, or a new analytics query. The patterns are all reusable.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>

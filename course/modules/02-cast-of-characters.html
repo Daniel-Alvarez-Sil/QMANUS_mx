@@ -1,0 +1,212 @@
+<section class="module" id="module-2" style="background: var(--color-bg-warm)">
+  <div class="module-content">
+
+    <!-- Screen 1: Hero -->
+    <div class="screen">
+      <div class="module-number">02</div>
+      <h1 class="module-title">The Cast of Characters</h1>
+      <p class="module-subtitle">Every actor in the system — what they do, and why each one exists</p>
+
+      <div class="callout callout-info animate-in" style="margin-top: var(--space-10)">
+        <div class="callout-icon">🎭</div>
+        <div>
+          Think of AgentNexus like a <strong>film production</strong>. There&apos;s a director who receives the script (FastAPI), a continuity supervisor who tracks everything that happened (TiDB), a bouncer who checks badges (JWT middleware), a star AI model brought in for special scenes (Qwen), and a producer who keeps the whole operation running (the connection pool manager). Each has exactly one job.
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 2: Visual file tree + actor map -->
+    <div class="screen">
+      <h2 class="screen-title">Meet the files — and what each one is responsible for</h2>
+      <p class="screen-subtitle">AgentNexus follows a clean separation of concerns. Every file has exactly one job.</p>
+
+      <div class="arch-diagram animate-in" style="margin-top: var(--space-8)">
+        <div class="arch-zone" style="border-color: var(--color-accent)">
+          <h4 class="arch-zone-label" style="color: var(--color-accent)">Entry Point</h4>
+          <div class="arch-component" data-desc="main.py — The front door. Imports the FastAPI app and hands it to Uvicorn (the web server). One line: from app.app import app." onclick="showArchDesc(this)">
+            <div class="arch-icon">🚪</div>
+            <span>main.py</span>
+          </div>
+        </div>
+        <div class="arch-zone" style="border-color: #7B6DAA">
+          <h4 class="arch-zone-label" style="color: #7B6DAA">Application Layer</h4>
+          <div class="arch-component" data-desc="app/app.py — The wiring file. Attaches middleware and routes to the FastAPI instance. Nothing else. If it&apos;s not wiring, it doesn&apos;t belong here." onclick="showArchDesc(this)">
+            <div class="arch-icon">🔌</div>
+            <span>app/app.py</span>
+          </div>
+          <div class="arch-component" data-desc="app/middleware.py — The security checkpoint. Runs before EVERY request. Validates the JWT token and extracts the tenant identity. If it fails, returns 401 and the request dies here." onclick="showArchDesc(this)">
+            <div class="arch-icon">🛡️</div>
+            <span>app/middleware.py</span>
+          </div>
+          <div class="arch-component" data-desc="app/context.py — The shared whiteboard. Stores the current tenant_id in a ContextVar — a Python special variable that is scoped to a single async request, so two concurrent requests never mix up each other&apos;s tenant." onclick="showArchDesc(this)">
+            <div class="arch-icon">📋</div>
+            <span>app/context.py</span>
+          </div>
+        </div>
+        <div class="arch-zone" style="border-color: #2D8B55">
+          <h4 class="arch-zone-label" style="color: #2D8B55">Routes</h4>
+          <div class="arch-component" data-desc="app/routes/agents.py — The core product. Three endpoints: launch an agent, call a tool, get agent state. All scoped to the authenticated tenant." onclick="showArchDesc(this)">
+            <div class="arch-icon">🤖</div>
+            <span>routes/agents.py</span>
+          </div>
+          <div class="arch-component" data-desc="app/routes/meta_agent.py — The observer. Queries 24h of data from TiFlash (TiDB&apos;s fast analytics engine), sends a summary to Qwen, and returns AI-generated optimization recommendations." onclick="showArchDesc(this)">
+            <div class="arch-icon">🔭</div>
+            <span>routes/meta_agent.py</span>
+          </div>
+          <div class="arch-component" data-desc="app/routes/insights.py — The dashboard data engine. Runs complex SQL GROUP BY queries across agent_sessions and tool_call_history to power the analytics UI." onclick="showArchDesc(this)">
+            <div class="arch-icon">📊</div>
+            <span>routes/insights.py</span>
+          </div>
+          <div class="arch-component" data-desc="app/routes/auth.py — Token vending machine. Accepts a provisioning secret and tenant ID, mints a JWT, returns it. Requires no existing JWT to call (it&apos;s exempt from middleware)." onclick="showArchDesc(this)">
+            <div class="arch-icon">🎫</div>
+            <span>routes/auth.py</span>
+          </div>
+        </div>
+        <div class="arch-zone" style="border-color: #D4A843">
+          <h4 class="arch-zone-label" style="color: #D4A843">Data Layer</h4>
+          <div class="arch-component" data-desc="app/db.py — The connection pool manager. Creates and maintains a dedicated pool of database connections per tenant. Lazy initialization: the pool is only created when the first request for that tenant arrives." onclick="showArchDesc(this)">
+            <div class="arch-icon">🏊</div>
+            <span>app/db.py</span>
+          </div>
+          <div class="arch-component" data-desc="app/models.py — The contract enforcer. Pydantic models that validate every incoming request. If agent_type is not in {research, codegen, data, web}, it rejects the request before any code runs." onclick="showArchDesc(this)">
+            <div class="arch-icon">📝</div>
+            <span>app/models.py</span>
+          </div>
+          <div class="arch-component" data-desc="schema.sql — The database blueprint. Defines the tables: agent_sessions (one row per agent) and tool_call_history (one row per tool invocation). Also includes TiFlash replica hints for analytics." onclick="showArchDesc(this)">
+            <div class="arch-icon">🗄️</div>
+            <span>schema.sql</span>
+          </div>
+        </div>
+        <div class="arch-description" id="arch-desc">Click any component to learn what it does</div>
+      </div>
+    </div>
+
+    <!-- Screen 3: Group Chat — components introducing themselves -->
+    <div class="screen">
+      <h2 class="screen-title">The components introduce themselves</h2>
+      <p class="screen-subtitle">Imagine the key pieces of AgentNexus in a team standup...</p>
+
+      <div class="chat-window" id="chat-module2">
+        <div class="chat-messages">
+          <div class="chat-message" data-msg="0" data-sender="fastapi" style="display:none">
+            <div class="chat-avatar" style="background: var(--color-actor-1)">F</div>
+            <div class="chat-bubble">
+              <span class="chat-sender" style="color: var(--color-actor-1)">FastAPI</span>
+              <p>Hey team. I&apos;m the web framework. Every HTTP request comes through me. I route it to the right function and send back the response. I also generate the interactive docs at /docs automatically.</p>
+            </div>
+          </div>
+          <div class="chat-message" data-msg="1" data-sender="middleware" style="display:none">
+            <div class="chat-avatar" style="background: var(--color-actor-3)">M</div>
+            <div class="chat-bubble">
+              <span class="chat-sender" style="color: var(--color-actor-3)">Middleware</span>
+              <p>I run before FastAPI even sees the request. I check the JWT token, verify the tenant ID matches, and write the tenant identity to a shared context. If anything&apos;s wrong, I return 401 and the request never reaches any route.</p>
+            </div>
+          </div>
+          <div class="chat-message" data-msg="2" data-sender="fastapi" style="display:none">
+            <div class="chat-avatar" style="background: var(--color-actor-1)">F</div>
+            <div class="chat-bubble">
+              <span class="chat-sender" style="color: var(--color-actor-1)">FastAPI</span>
+              <p>Wait — so the CORS middleware runs AFTER you?</p>
+            </div>
+          </div>
+          <div class="chat-message" data-msg="3" data-sender="middleware" style="display:none">
+            <div class="chat-avatar" style="background: var(--color-actor-3)">M</div>
+            <div class="chat-bubble">
+              <span class="chat-sender" style="color: var(--color-actor-3)">Middleware</span>
+              <p>Exactly. Middleware layers wrap each other like an onion. CORS is the outermost layer — it runs first on the way IN so even 401 responses get the right CORS headers. I&apos;m the inner layer, running after CORS is satisfied.</p>
+            </div>
+          </div>
+          <div class="chat-message" data-msg="4" data-sender="tidb" style="display:none">
+            <div class="chat-avatar" style="background: var(--color-actor-2)">T</div>
+            <div class="chat-bubble">
+              <span class="chat-sender" style="color: var(--color-actor-2)">TiDB Cloud</span>
+              <p>I&apos;m the database. But I&apos;m not just any database — I&apos;m an HTAP database. I can handle your live agent session writes (OLTP) AND run heavy analytics queries (OLAP) at the same time without one slowing the other. The secret is TiFlash — a columnar copy of the data optimized for aggregation.</p>
+            </div>
+          </div>
+          <div class="chat-message" data-msg="5" data-sender="pool" style="display:none">
+            <div class="chat-avatar" style="background: var(--color-actor-4)">P</div>
+            <div class="chat-bubble">
+              <span class="chat-sender" style="color: var(--color-actor-4)">Connection Pool</span>
+              <p>And I manage the connection to TiDB so we don&apos;t open a new connection on every single request — that would be incredibly slow. I keep 10 connections open per tenant, ready to go. When a request needs the database, it borrows one from me and returns it when done.</p>
+            </div>
+          </div>
+          <div class="chat-message" data-msg="6" data-sender="qwen" style="display:none">
+            <div class="chat-avatar" style="background: var(--color-actor-5)">Q</div>
+            <div class="chat-bubble">
+              <span class="chat-sender" style="color: var(--color-actor-5)">Qwen (via DashScope)</span>
+              <p>I&apos;m the only external AI in the system. I don&apos;t run the agents — I watch them. The meta-agent collects 24 hours of execution data and sends it to me. I analyze it and return JSON with failure patterns, optimization suggestions, and an efficiency score.</p>
+            </div>
+          </div>
+          <div class="chat-message" data-msg="7" data-sender="pydantic" style="display:none">
+            <div class="chat-avatar" style="background: var(--color-actor-1)">V</div>
+            <div class="chat-bubble">
+              <span class="chat-sender" style="color: var(--color-actor-1)">Pydantic (Models)</span>
+              <p>I&apos;m the bouncer for request data. Before any route function runs, I check that the body has the right shape. If you send agent_type: &quot;hacker&quot;, I reject it immediately — only research, codegen, data, and web are allowed. No if-statements needed in the route code.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="chat-typing" id="chat-module2-typing" style="display:none">
+          <div class="chat-avatar" id="chat-module2-typing-avatar">?</div>
+          <div class="chat-typing-dots">
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
+          </div>
+        </div>
+
+        <div class="chat-controls">
+          <button class="btn chat-next-btn">Next Message</button>
+          <button class="btn chat-all-btn">Play All</button>
+          <button class="btn chat-reset-btn">Replay</button>
+          <span class="chat-progress"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 4: The connection pool code translation -->
+    <div class="screen">
+      <h2 class="screen-title">The clever trick: one database pool per tenant</h2>
+      <p class="screen-subtitle">From <code>app/db.py</code> — a pattern called <span class="tooltip" data-tip="Double-checked locking is a pattern that avoids the slow path (acquiring a lock) when the thing you&apos;re protecting already exists. Check once without a lock. If it&apos;s there, done. If not, acquire the lock, check again (because someone else might have created it while you waited), then create it.">double-checked locking</span>.</p>
+
+      <div class="translation-block animate-in">
+        <div class="translation-code">
+          <span class="translation-label">CODE</span>
+          <pre><code><span class="code-line"><span class="code-keyword">async def</span> <span class="code-function">_get_or_create_pool</span>(tenant_id):</span>
+<span class="code-line">    <span class="code-keyword">if</span> tenant_id <span class="code-keyword">in</span> pools:</span>
+<span class="code-line">        <span class="code-keyword">return</span> pools[tenant_id]</span>
+<span class="code-line">    lock = <span class="code-keyword">await</span> <span class="code-function">_pool_lock</span>(tenant_id)</span>
+<span class="code-line">    <span class="code-keyword">async with</span> lock:</span>
+<span class="code-line">        <span class="code-keyword">if</span> tenant_id <span class="code-keyword">not in</span> pools:</span>
+<span class="code-line">            pool = <span class="code-keyword">await</span> aiomysql.<span class="code-function">create_pool</span>(</span>
+<span class="code-line">                host=TIDB_HOST, maxsize=<span class="code-number">10</span>, ...)</span>
+<span class="code-line">            pools[tenant_id] = pool</span>
+<span class="code-line">    <span class="code-keyword">return</span> pools[tenant_id]</span>
+</code></pre>
+        </div>
+        <div class="translation-english">
+          <span class="translation-label" style="position: relative; top: auto; right: auto; display: block; margin-bottom: var(--space-3)">PLAIN ENGLISH</span>
+          <div class="translation-lines">
+            <p class="tl">Function: give me a database connection pool for this tenant.</p>
+            <p class="tl">Fast path: if the pool already exists, return it immediately (no locking needed).</p>
+            <p class="tl">We&apos;re done — 99% of requests exit here.</p>
+            <p class="tl">Slow path: get a lock that&apos;s specific to this tenant (not a global lock!).</p>
+            <p class="tl">Hold the lock while we do the creation...</p>
+            <p class="tl">Check AGAIN — maybe another request created it while we were waiting.</p>
+            <p class="tl">Actually create the connection pool (max 10 connections)...</p>
+            <p class="tl">...and save it so future requests hit the fast path.</p>
+            <p class="tl">Return the pool (whether we just created it or found it already existing).</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout callout-aha animate-in" style="margin-top: var(--space-8)">
+        <div class="callout-icon">💡</div>
+        <div>
+          <strong>Why per-tenant pools?</strong> If two tenants shared a pool, a heavy request from Company A could starve Company B&apos;s requests of database connections. Separate pools give each tenant guaranteed capacity — and make it impossible for one tenant to accidentally affect another&apos;s performance.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>

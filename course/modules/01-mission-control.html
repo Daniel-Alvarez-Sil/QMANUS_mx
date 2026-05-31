@@ -1,0 +1,165 @@
+<section class="module" id="module-1" style="background: var(--color-bg)">
+  <div class="module-content">
+
+    <!-- Screen 1: Hero -->
+    <div class="screen">
+      <div class="module-number">01</div>
+      <h1 class="module-title">Mission Control</h1>
+      <p class="module-subtitle">What AgentNexus does — and what happens the moment you launch an agent</p>
+
+      <div class="callout callout-info animate-in" style="margin-top: var(--space-10)">
+        <div class="callout-icon">🚀</div>
+        <div>
+          <strong>Built in 6 hours at a hackathon in Mexico City.</strong>
+          AgentNexus is a platform that lets multiple companies run
+          <span class="tooltip" data-tip="An AI agent is a program that can break a big goal into steps, use tools (like searching the web or running code), and keep working until it&apos;s done — without a human guiding each step.">AI agents</span>
+          simultaneously — completely isolated from each other — all on a single shared system.
+        </div>
+      </div>
+
+      <div class="card-grid" style="margin-top: var(--space-10)">
+        <div class="feature-card animate-in">
+          <div class="feature-icon" style="background: var(--color-accent-light); color: var(--color-accent)">🏢</div>
+          <h3>Multi-tenant</h3>
+          <p>Company A and Company B can both use the platform at the same time. They never see each other's data — it's like having separate apartments in the same building.</p>
+        </div>
+        <div class="feature-card animate-in">
+          <div class="feature-icon" style="background: #E8F5EE; color: #2D8B55">🤖</div>
+          <h3>AI Agents</h3>
+          <p>Each company launches agents that can run tools: search the web, execute code, query a database, call external APIs. The platform tracks every action.</p>
+        </div>
+        <div class="feature-card animate-in">
+          <div class="feature-icon" style="background: #FDF5E0; color: #D4A843">📊</div>
+          <h3>Real-time Analytics</h3>
+          <p>A meta-agent (powered by Qwen AI) watches all agent sessions and generates optimization recommendations — an AI monitoring other AIs.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 2: The Journey -->
+    <div class="screen">
+      <h2 class="screen-title">Imagine you're an enterprise launching your first agent</h2>
+      <p class="screen-subtitle">Here's the exact journey your request takes — from browser click to database record and back.</p>
+
+      <div class="flow-animation" data-steps='[
+        {"highlight":"flow-actor-1","label":"You open index.html in your browser, enter your Tenant ID and JWT token, then click Launch Agent"},
+        {"highlight":"flow-actor-1","label":"The browser sends an HTTP POST request to /api/v1/agents/launch with your task plan","packet":true,"from":"actor-1","to":"actor-2"},
+        {"highlight":"flow-actor-2","label":"The FastAPI backend intercepts the request — the tenant middleware runs first, checking your JWT token"},
+        {"highlight":"flow-actor-2","label":"If your JWT is valid and matches your Tenant ID, the request continues to the launch_agent function","packet":true,"from":"actor-2","to":"actor-3"},
+        {"highlight":"flow-actor-3","label":"TiDB Cloud stores the new agent session, stamped with your tenant_id so it can never leak to other tenants"},
+        {"highlight":"flow-actor-3","label":"The database returns the server timestamp — confirmation the session was saved","packet":true,"from":"actor-3","to":"actor-2"},
+        {"highlight":"flow-actor-2","label":"FastAPI packages the response: session_id, tenant_id, status: planning","packet":true,"from":"actor-2","to":"actor-1"},
+        {"highlight":"flow-actor-1","label":"Your dashboard shows the new agent session — ready to receive tool calls"}
+      ]'>
+        <div class="flow-actors">
+          <div class="flow-actor" id="flow-actor-1">
+            <div class="flow-actor-icon">🖥️</div>
+            <span>Browser</span>
+          </div>
+          <div class="flow-actor" id="flow-actor-2">
+            <div class="flow-actor-icon">⚡</div>
+            <span>FastAPI</span>
+          </div>
+          <div class="flow-actor" id="flow-actor-3">
+            <div class="flow-actor-icon">🗄️</div>
+            <span>TiDB Cloud</span>
+          </div>
+        </div>
+        <div class="flow-packet" id="flow-packet"></div>
+        <div class="flow-step-label" id="flow-label">Click "Next Step" to trace the journey</div>
+        <div class="flow-controls">
+          <button class="btn flow-next-btn">Next Step</button>
+          <button class="btn flow-reset-btn">Restart</button>
+          <span class="flow-progress"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 3: The API Surface -->
+    <div class="screen">
+      <h2 class="screen-title">The full menu of what AgentNexus can do</h2>
+      <p class="screen-subtitle">Every capability is exposed as an <span class="tooltip" data-tip="An API (Application Programming Interface) is a menu of actions a server offers. You make a request specifying what you want, and it responds with data or confirmation. It&apos;s how apps talk to each other.">API endpoint</span> — a specific URL you hit with a specific action.</p>
+
+      <div class="card-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr))">
+        <div class="pattern-card animate-in">
+          <div class="pattern-badge" style="background: var(--color-accent-light); color: var(--color-accent)">POST</div>
+          <h4>/api/v1/auth/token</h4>
+          <p>Mint a <span class="tooltip" data-tip="JWT (JSON Web Token) is a small, tamper-proof pass that proves your identity. Think of it as a wristband from a concert — the venue (server) stamped it, so anyone can verify it&apos;s real without calling the venue.">JWT token</span> for a tenant. Requires a provisioning secret — so only authorized admins can create tenants.</p>
+        </div>
+        <div class="pattern-card animate-in">
+          <div class="pattern-badge" style="background: var(--color-accent-light); color: var(--color-accent)">POST</div>
+          <h4>/api/v1/agents/launch</h4>
+          <p>Start a new agent session with a task plan and context. Returns a <code>session_id</code> — the unique ID you'll use for all future calls on this agent.</p>
+        </div>
+        <div class="pattern-card animate-in">
+          <div class="pattern-badge" style="background: #E8F5EE; color: #2D8B55">GET</div>
+          <h4>/api/v1/agents/{session_id}/state</h4>
+          <p>Inspect what an agent is doing — its current status and the last 5 tool calls it made. Cross-tenant requests return 404, not 403 (see Module 3 for why this matters).</p>
+        </div>
+        <div class="pattern-card animate-in">
+          <div class="pattern-badge" style="background: var(--color-accent-light); color: var(--color-accent)">POST</div>
+          <h4>/api/v1/agents/{session_id}/tools/call</h4>
+          <p>Execute a tool within an agent session. The platform records input, output, latency, and status — every action is logged for later analysis.</p>
+        </div>
+        <div class="pattern-card animate-in">
+          <div class="pattern-badge" style="background: #E8F5EE; color: #2D8B55">GET</div>
+          <h4>/api/{tenant_id}/insights</h4>
+          <p>Analytics dashboard: session counts, tool success rates, latency trends — powered by TiDB&apos;s columnar engine for fast aggregation without slowing down live traffic.</p>
+        </div>
+        <div class="pattern-card animate-in">
+          <div class="pattern-badge" style="background: #FDF5E0; color: #D4A843">GET</div>
+          <h4>/api/v1/meta-agent/report</h4>
+          <p>Qwen AI reads the last 24h of agent data and generates optimization recommendations. The AI that watches the AIs.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 4: Code Translation -->
+    <div class="screen">
+      <h2 class="screen-title">What "launching an agent" looks like in code</h2>
+      <p class="screen-subtitle">From <code>app/routes/agents.py</code> — the function that runs when you hit POST /api/v1/agents/launch.</p>
+
+      <div class="translation-block animate-in">
+        <div class="translation-code">
+          <span class="translation-label">CODE</span>
+          <pre><code><span class="code-line"><span class="code-keyword">async def</span> <span class="code-function">launch_agent</span>(body: LaunchAgentRequest):</span>
+<span class="code-line">    tenant_id  = ctx_tenant.<span class="code-function">get</span>()</span>
+<span class="code-line">    session_id = <span class="code-function">str</span>(uuid.<span class="code-function">uuid4</span>())</span>
+<span class="code-line">    conn = <span class="code-keyword">await</span> <span class="code-function">get_conn</span>(tenant_id)</span>
+<span class="code-line">    <span class="code-keyword">async with</span> conn.<span class="code-function">cursor</span>() <span class="code-keyword">as</span> cur:</span>
+<span class="code-line">        <span class="code-keyword">await</span> cur.<span class="code-function">execute</span>(</span>
+<span class="code-line">            <span class="code-string">"INSERT INTO agent_sessions ..."</span>,</span>
+<span class="code-line">            (session_id, tenant_id, body.agent_type, ...)</span>
+<span class="code-line">        )</span>
+<span class="code-line">    <span class="code-keyword">return</span> JSONResponse(status_code=<span class="code-number">201</span>, content={</span>
+<span class="code-line">        <span class="code-string">"session_id"</span>: session_id,</span>
+<span class="code-line">        <span class="code-string">"status"</span>: <span class="code-string">"planning"</span>,</span>
+<span class="code-line">    })</span>
+</code></pre>
+        </div>
+        <div class="translation-english">
+          <span class="translation-label" style="position: relative; top: auto; right: auto; display: block; margin-bottom: var(--space-3)">PLAIN ENGLISH</span>
+          <div class="translation-lines">
+            <p class="tl">This is the function that runs when you POST to /agents/launch.</p>
+            <p class="tl">Read the tenant ID from the request context — never trust user input for this.</p>
+            <p class="tl">Generate a random unique ID for this new agent session.</p>
+            <p class="tl">Get a database connection belonging to this tenant.</p>
+            <p class="tl">Open a cursor (a pen to write to the database)...</p>
+            <p class="tl">Write a new row to the agent_sessions table...</p>
+            <p class="tl">...inserting the session ID, tenant ID, and agent type.</p>
+            <p class="tl">Send back a "201 Created" response with the new session details.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout callout-aha animate-in" style="margin-top: var(--space-8)">
+        <div class="callout-icon">💡</div>
+        <div>
+          <strong>Aha! The tenant ID never comes from the user's request body.</strong>
+          It comes from <code>ctx_tenant.get()</code> — a verified value that was set by the middleware AFTER validating the JWT. This is a key security pattern: never let users claim their own identity in the body of a request.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>

@@ -2,7 +2,12 @@
   "permissions": {
     "allow": [
       "Bash(python -c \"from app.app import app; print\\(''imports OK''\\)\")",
-      "Bash(ls /home/gio/Vscode-projects/QMANUS_mx/*.pem)"
+      "Bash(ls /home/gio/Vscode-projects/QMANUS_mx/*.pem)",
+      "Bash(python3 -c \"import sys,json; data=json.load\\(sys.stdin\\); print\\(data[0]['text'][:15000]\\)\")",
+      "Bash(cp /home/gio/.claude/skills/codebase-to-course/references/styles.css /home/gio/Vscode-projects/QMANUS_mx/course/styles.css)",
+      "Bash(cp /home/gio/.claude/skills/codebase-to-course/references/main.js /home/gio/Vscode-projects/QMANUS_mx/course/main.js)",
+      "Bash(cp /home/gio/.claude/skills/codebase-to-course/references/_footer.html /home/gio/Vscode-projects/QMANUS_mx/course/_footer.html)",
+      "Bash(cp /home/gio/.claude/skills/codebase-to-course/references/build.sh /home/gio/Vscode-projects/QMANUS_mx/course/build.sh)"
     ]
   }
 }
