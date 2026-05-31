@@ -18,3 +18,16 @@ __pycache__/
 *.pyc
 .env.save
 Pasted Text.txt
+
+# AI Agent caches
+graphify-out/
+.claude/
+.qwen/
+.cursor/
+.aider/
+.cocoindex_code/
+*.pyc
+__pycache__/
+.env
+.env.local
+*.log
